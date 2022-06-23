@@ -2,6 +2,7 @@ class Player:
     def __init__(self, name) -> None:
         self.__numPieces = 12
         self.__name = name
+
     @property
     def numPieces(self):
         return self.__numPieces
@@ -10,5 +11,5 @@ class Player:
         self.__numPieces -= n
 
     @property
-    def getName(self):
+    def name(self):
         return self.__name
