@@ -1,3 +1,5 @@
+from Game import GameError
+
 class Ui:
     def __init__(self, game):
         self.__game = game
@@ -19,8 +21,15 @@ class Ui:
     def run(self):
         while self.__game.getWinner() == None:
             print(self.__game)
-            x1, y1, x2, y2 = self.getInput()
-            self.__game.play(x1, y1, x2, y2)
+            notPossible = True
+
+            while notPossible:
+                x1, y1, x2, y2 = self.getInput()
+                try:
+                    self.__game.play(x1, y1, x2, y2)
+                    notPossible = False
+                except GameError as e:
+                    print(e)
 
 
 class Gui(Ui):
