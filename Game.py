@@ -166,6 +166,8 @@ class Game:
         else:
             self.__player1.decreaseNumPieces(1)
 
+    def at(self, x, y):
+        return str(self.__board[y][x])
 
     def switchTurn(self):
         if self.__currentPlayer == self.__player1:
@@ -180,7 +182,7 @@ class Game:
             return self.__player2.name
         return None
 
-    
+
     def __repr__(self):
         result = "  " + " ".join(map(str, list(col for col in range(1, 9))))
         for i, row in enumerate(self.__board):
