@@ -6,5 +6,6 @@ from Player import Player
 
 if __name__ == "__main__":
     if len(argv) == 1:
-        ui = Terminal(Game(Player("Joe", "o"), Player("Daniel", "x")))
+        ui = Terminal(Game(Player("Joe", "white", 1, True), Player("Daniel", "black", -1, False)))
     ui.run()
+    

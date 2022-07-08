@@ -30,6 +30,7 @@ class Ui:
                     notPossible = False
                 except GameError as e:
                     print(e)
+                    
 
 
 class Gui(Ui):
