@@ -1,17 +1,23 @@
 from Piece import Piece
 
 class Player:
-    def __init__(self, name, colour, direction, belongsToPlayerOne) -> None:
+    def __init__(self, name, colour, direction) -> None:
         self.__numPieces = 12 # left
         self.__name = name
         self.__direction = direction # 1 is down - so player one
         self.__colour = colour
-        self.__belongsToPlayerOne = belongsToPlayerOne
-        
+        self.__time = 120 # can be changed
 
     @property
     def numPieces(self):
         return self.__numPieces
+
+    @property
+    def time(self):
+        return self.__time
+
+    def amendTime(self, t):
+        self.__time = t
 
     @property
     def name(self):
@@ -24,10 +30,6 @@ class Player:
     @property
     def colour(self):
         return self.__colour
-
-    @property
-    def belongsToPlayerOne(self):
-        return self.__belongsToPlayerOne
 
     def decreaseNumPieces(self, n): #?
         self.__numPieces -= n

@@ -24,36 +24,49 @@ class Game:
         [self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, ]]
         """
 
-    def prepareBoard(self): # self, colour, belongsToPlayerOne, direction, x, y
-        for col in range(0, 8, 2):
-            self.__board[0][col] = Stone("white", True, 1, col, 0)
-        for col in range(1, 8, 2):
-            self.__board[1][col] = Stone("white", True, 1, col, 1)
-        for col in range(0, 8, 2):
-            self.__board[2][col] = Stone("white", True, 1, col, 2)
-        
-        for col in range(1, 8, 2):
-            self.__board[5][col] = Stone("black", False, -1, col, 5)
-        for col in range(0, 8, 2):
-            self.__board[6][col] = Stone("black", False, -1, col, 6)
-        for col in range(1, 8, 2):
-            self.__board[7][col] = Stone("black", False, -1, col, 7)
-        
+    @property
+    def board(self):
+        return self.__board
 
-    def play(self, x1, y1, x2, y2):
+    def prepareBoard(self): # self, colour, direction, x, y
+        for col in range(0, 8, 2):
+            self.__board[0][col] = Stone("white", 1, col, 0)
+        for col in range(1, 8, 2):
+            self.__board[1][col] = Stone("white", 1, col, 1)
+        for col in range(0, 8, 2):
+            self.__board[2][col] = Stone("white", 1, col, 2)
+        
+        for col in range(1, 8, 2):
+            self.__board[5][col] = Stone("black", -1, col, 5)
+        for col in range(0, 8, 2):
+            self.__board[6][col] = Stone("black", -1, col, 6)
+        for col in range(1, 8, 2):
+            self.__board[7][col] = Stone("black", -1, col, 7)
+        
+    def ownPiece(self, x, y): # accounts for empty sqr
+        x -= 1
+        y -= 1
+
+        currentPiece = self.__board[y][x] 
+        #print(x, y, currentPiece, currentPiece.colour, self.__currentPlayer.colour)
+        if currentPiece == self.EMPTY:
+            raise GameError("No piece exists here")
+        elif currentPiece.colour != self.__currentPlayer.colour:
+            raise GameError("Not your piece")  
+
+    def vacantSquare(self, x, y):
+        x -= 1
+        y -= 1
+        if self.__board[y][x] != self.EMPTY:
+            raise GameError("Square occupied")
+
+    def play(self, x1, y1, x2, y2): # accepts 1 indexed
         x1 = x1 - 1
         y1 = y1 - 1
         x2 = x2 - 1
         y2 = y2 - 1
 
-        
-        currentPiece = self.__board[y1][x1] # validates that the coordinates are possible
-        if currentPiece == self.EMPTY:
-            raise GameError("No piece exists here")
-        elif currentPiece.colour != self.__currentPlayer.colour:
-            raise GameError("Not your piece")
-        elif self.__board[y2][x2] != self.EMPTY:
-            raise GameError("Final square already occupied")
+        currentPiece = self.__board[y1][x1] 
 
 
         if self.__jumpingPiece != None: # this is when player is in jumping spree loop
@@ -102,7 +115,7 @@ class Game:
             for y in range(8):
                 for x in range(8):
                     piece = self.__board[y][x]
-                    if piece != self.EMPTY and piece.belongsToPlayerOne == self.__currentPlayer.belongsToPlayerOne:
+                    if piece != self.EMPTY and piece.direction == self.__currentPlayer.direction:
                         if self.canJump(piece):
                             return True
         else:
@@ -130,7 +143,7 @@ class Game:
         dx, dy = x2 - currentPiece.x, y2 - currentPiece.y
         if currentPiece.isStone:
             
-            if abs(dx) == 2 and dy == self.__currentPlayer.direction * 2 and self.__board[int(0.5*(currentPiece.y+y2))][int(0.5*(currentPiece.x+x2))] != self.EMPTY and self.__board[int(0.5*(currentPiece.y+y2))][int(0.5*(currentPiece.x+x2))].belongsToPlayerOne != self.__currentPlayer.belongsToPlayerOne and self.__board[y2][x2] == self.EMPTY:
+            if abs(dx) == 2 and dy == self.__currentPlayer.direction * 2 and self.__board[int(0.5*(currentPiece.y+y2))][int(0.5*(currentPiece.x+x2))] != self.EMPTY and self.__board[int(0.5*(currentPiece.y+y2))][int(0.5*(currentPiece.x+x2))].direction != self.__currentPlayer.direction and self.__board[y2][x2] == self.EMPTY:
                 return True
             return False
         else: # is a king
@@ -188,7 +201,7 @@ class Game:
         for i, row in enumerate(self.__board):
             result += f"\n{i+1} " + " ".join(str(x) for x in row)
         result += f"\n{self.__player1.name}({self.__player1.colour}): {self.__player1.numPieces} {self.__player2.name}({self.__player2.colour}): {self.__player2.numPieces}"
-        result += f"\n{self.__currentPlayer.name}'s turn (enter coordinates for starting then ending square for moving piece e.g. x1 y1 x2 y2"
+        result += f"\n{self.__currentPlayer.name}'s turn (enter coordinates for starting then ending square for moving piece in separate lines e.g. \nx1 y1 \nx2 y2"
         return result
    
 class GameError(Exception):

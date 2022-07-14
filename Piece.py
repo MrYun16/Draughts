@@ -2,9 +2,8 @@ from abc import abstractmethod
 
 
 class Piece:
-    def __init__(self, colour, belongsToPlayerOne, direction, x, y):   
+    def __init__(self, colour, direction, x, y):   
         self.__colour = colour
-        self.__belongsToPlayerOne = belongsToPlayerOne
         self.__direction = direction
         self.__x = x
         self.__y = y
@@ -33,16 +32,12 @@ class Piece:
     def colour(self):
         return self.__colour
 
-    @property
-    def belongsToPlayerOne(self):
-        return self.__belongsToPlayerOne
-
     def __repr__(self) -> str:
         pass
 
 class Stone(Piece):
-    def __init__(self, colour, belongsToPlayerOne, direction, x, y):
-        super().__init__(colour, belongsToPlayerOne, direction, x, y)
+    def __init__(self, colour, direction, x, y):
+        super().__init__(colour, direction, x, y)
         self.isStone = True
         if direction == 1: # down
             self.vectors = [[2, -2], [2, 2]]
@@ -50,21 +45,21 @@ class Stone(Piece):
             self.vectors = [[-2, -2], [-2, 2]]
     
     def promoted(self):
-        return King(self.colour, self.belongsToPlayerOne, self.direction, self.x, self.y)
+        return King(self.colour, self.direction, self.x, self.y)
 
     def __repr__(self) -> str:
-        if self.belongsToPlayerOne:
+        if self.direction == 1:
             return "o"
         return "x"
 
 class King(Piece):
-    def __init__(self, colour, belongsToPlayerOne, direction, x, y):
-        super().__init__(colour, belongsToPlayerOne, direction, x, y)
+    def __init__(self, colour, direction, x, y):
+        super().__init__(colour, direction, x, y)
         self.isStone = False
         self.vectors = [[-2, -2], [-2, 2], [2, -2], [2, 2]]
 
     def __repr__(self) -> str:
-        if self.belongsToPlayerOne:
+        if self.direction == 1:
             return "0"
         return "+"
 
