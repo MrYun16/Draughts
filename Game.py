@@ -1,5 +1,6 @@
 from Piece import Stone, King
 from Player import Player
+from copy import deepcopy
 
 class Game:  
     EMPTY = "-"
@@ -9,10 +10,15 @@ class Game:
         self.__player2 = player2
         self.__currentPlayer = self.__player1
         self.__jumpingPiece = None # piece that must keeping jumping if possible
-        #self.__board = [[[self.__player1.piece, self.EMPTY][i % 2], [self.__player1.piece, self.EMPTY][(i + 1) % 2]] * 4 for i in range(3)] + [[self.EMPTY] * 8] * 2 + [[[self.__player2.piece, self.EMPTY][(i + 1) % 2], [self.__player2.piece, self.EMPTY][i % 2]] * 4 for i in range(3)] # player1 top (o), player2 bottom (x)
-        
         self.__board = [[self.EMPTY for _ in range(8)] for _ in range(8)]
+        
+        self.__boardHistory = []
+        self.__piecesHistory = [] # contains [player1.numpieces, player2.numpieces]
+        self.__currentPlayerHistory = [] # uses player's direction
+        self.__jumpingPieceHistory = []
+        #self.__justUndoed = False
         self.prepareBoard()
+        self.updateHistory()
         """
         self.__board = [[self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, Stone("white", True, 1, 4, 0), self.EMPTY, self.EMPTY, self.EMPTY],
         [self.EMPTY, self.EMPTY, Stone("white", True, 1, 2, 1), self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, ],
@@ -27,6 +33,36 @@ class Game:
     @property
     def board(self):
         return self.__board
+
+    def undo(self): # needs to be finished
+        print(f"before: {self.__currentPlayerHistory}")
+        
+        #if self.__justUndoed:
+        #    raise GameError("Already undoed")
+        if len(self.__piecesHistory) == 1:
+            raise GameError("Nothing to undo")
+
+        del self.__boardHistory[-1]
+        del self.__piecesHistory[-1]
+        del self.__jumpingPieceHistory[-1]
+        del self.__currentPlayerHistory[-1]
+        self.__justUndoed = True
+        
+        self.__board = deepcopy(self.__boardHistory[-1])
+        self.__player1.amendNumPieces(self.__piecesHistory[-1][0])
+        self.__player2.amendNumPieces(self.__piecesHistory[-1][1])
+        self.__jumpingPiece = self.__jumpingPieceHistory[-1]
+        self.__currentPlayer = self.__player1 if self.__currentPlayerHistory[-1] == 1 else self.__player2
+    
+        print(f"after: {self.__currentPlayerHistory}, current player: {self.__currentPlayer.direction}")    
+
+    def updateHistory(self):
+        self.__boardHistory.append(deepcopy(self.__board))
+        self.__piecesHistory.append([self.__player1.numPieces, self.__player2.numPieces])
+        self.__jumpingPieceHistory.append(self.__jumpingPiece)
+        self.__currentPlayerHistory.append(1 if self.__currentPlayer.colour == self.__player1.colour else -1)
+        self.__justUndoed = False
+        print(1)
 
     def prepareBoard(self): # self, colour, direction, x, y
         for col in range(0, 8, 2):
@@ -75,27 +111,28 @@ class Game:
             elif self.isJump(currentPiece, x2, y2):
                 self.jump(currentPiece, x2, y2)
                 if self.canJump(self.__board[y2][x2]):
-                    self.__jumpingPiece = self.canJump(self.__board[y2][x2])
+                    self.__jumpingPiece = self.__board[y2][x2]
                 else:
                     self.__jumpingPiece = None
+    
             else:
                 raise GameError("Not possible")
         elif self.__jumpingPiece == None: # actual moving/jumping sequences - not in jumping spree
             if self.playerCanJump():
-               
                 if self.isMove(currentPiece, x2, y2):
                     raise GameError("Jump is possible")
                 elif self.isJump(currentPiece, x2, y2):
                     self.jump(currentPiece, x2, y2)
                     if self.canJump(currentPiece):
-                        
                         self.__jumpingPiece = currentPiece # entering jumping loop
+       
                 else:
                     raise GameError("Move not possible")
             else:
                 if self.isMove(currentPiece, x2, y2):
                     self.move(currentPiece, x2, y2)
                     self.__jumpingPiece = None
+                   
                 else:
                     raise GameError("Move not possible")
 
@@ -109,6 +146,8 @@ class Game:
                 self.__jumpingPiece = None # end the streak
                 self.switchTurn()
        
+        self.updateHistory()
+
     def playerCanJump(self):
         if self.__currentPlayer.direction == 1:
           
@@ -175,9 +214,9 @@ class Game:
         self.move(currentPiece, x2, y2)
         self.__board[int(0.5*(y1 + y2))][int(0.5*(x1 + x2))] = self.EMPTY
         if self.__currentPlayer == self.__player1:
-            self.__player2.decreaseNumPieces(1)
+            self.__player2.amendNumPieces(self.__player2.numPieces-1)
         else:
-            self.__player1.decreaseNumPieces(1)
+            self.__player1.amendNumPieces(self.__player1.numPieces-1)
 
     def at(self, x, y):
         return str(self.__board[y][x])

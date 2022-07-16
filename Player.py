@@ -31,5 +31,5 @@ class Player:
     def colour(self):
         return self.__colour
 
-    def decreaseNumPieces(self, n): #?
-        self.__numPieces -= n
+    def amendNumPieces(self, n): #?
+        self.__numPieces = n
