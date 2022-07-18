@@ -95,5 +95,5 @@ sequenceDiagram
     Note right of Admin: Exam results may <br> be delayed
     Admin-->>Student: Enrolment success
     Admin->>Professor: Assign student to tutor
-    Professor-->>Admin: Student is assigned
+    Professor-->>Admin: Student is assigned.
 ```
