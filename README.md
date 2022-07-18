@@ -7,32 +7,80 @@ https://mermaid.live/
 here is my diagram
 ```mermaid
 classDiagram
-   Person <|-- Student
-   Person <|-- Professor
-   Person : +String name
-   Person : +String phoneNumber
-   Person : +String emailAddress
-   Person: +purchaseParkingPass()
-   Address "1" <-- "0..1" Person:lives at
-   class Student{
-      +int studentNumber
-      +int averageMark
-      +isEligibleToEnrol()
-      +getSeminarsTaken()
+    Player <|-- AI
+    AI <|-- randomAI
+    Game o-- Player
+    Gui o-- Game
+    Game o-- Piece
+    Piece <|-- Stone
+    Piece <|-- King
+
+    class Gui{
+      +String square1clr
+      +String square2clr
+      +String gameOnGoing
+      -playWindow()
+      -squareClicked()
+      -updateBoard()
+      -run()
     }
-    class Professor{
-      +int salary
+
+    class Game{
+      -jumpingPiece
+      -board
+      -boardHistory
+      -PiecesHistory
+      -currentPlayerHistory
+      -jumpingPieceHistory
+      -prepareBoard()
+      -undo()
+      -ownPiece()
+      -getOwnPiece()
+      -play()
+      -vacantSquare()
+      -playerCanJump()
+      -canJump()
+      -isJump()
+      -isMove()
+      -move()
+      -jump()
+      -at()
+      -switchTurn()
+      -getWinner()
+      -updateHistory()
     }
-    class Address{
-      +String street
-      +String city
-      +String state
-      +int postalCode
-      +String country
-      -validate()
-      +outputAsLabel()  
-    }	
-```
+    class Player{
+      -numPieces
+      -name
+      -direction
+      -colour
+      -time
+      -isAI
+      +amendNumPieces()
+    }
+    class Piece{
+      -colour
+      -direction
+      -x
+      -y
+      -updateXY()
+    }
+    class Stone{
+      -isStone
+      -vectors
+      -promoted()
+    }
+    class King{
+      -isStone
+      -vectors
+    }
+    class AI{
+        -play()
+    }
+    class randomAI{
+        pass
+    }
+            
 
 
 # Seqence diagram
