@@ -94,4 +94,8 @@ sequenceDiagram
     Admin-->>Student: Enrolment success
     Admin->>Professor: Assign student to tutor
     Professor-->>Admin: Student is assigned.
+    
+    
+    
+    
 ```
