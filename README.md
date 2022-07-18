@@ -82,10 +82,8 @@ classDiagram
     }
             
 
-
-# Seqence diagram
-
 ```mermaid
+# Seqence diagram
 sequenceDiagram
     autonumber
     Student->>Admin: Can I enrol this semester?
