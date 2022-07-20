@@ -5,6 +5,7 @@ class Piece:
     def __init__(self, colour, direction, x, y):   
         self.__colour = colour
         self.__direction = direction
+        self.__isStone = None
         self.__x = x
         self.__y = y
 
@@ -25,12 +26,16 @@ class Piece:
         return self.__direction
 
     @property
-    def type(self):
-        return self.__type
-
-    @property
     def colour(self):
         return self.__colour
+
+    #@isStone.setter
+    def changeIsStone(self, value):
+        self.__isStone = value
+
+    @property
+    def isStone(self):
+        return self.__isStone
 
     def __repr__(self) -> str:
         pass
@@ -38,13 +43,30 @@ class Piece:
 class Stone(Piece):
     def __init__(self, colour, direction, x, y):
         super().__init__(colour, direction, x, y)
-        self.isStone = True
+        self.changeIsStone(True)
         if direction == 1: # down
-            self.vectors = [[2, -2], [2, 2]]
+            self.__jumpVects = [[-2, 2], [2, 2]]
+            self.__moveVects = [[-1, 1], [1, 1]]
         else: # up
-            self.vectors = [[-2, -2], [-2, 2]]
+            self.__jumpVects = [[2, -2], [-2, -2]]
+            self.__moveVects = [[1, -1], [-1, -1]]
     
-    def promoted(self):
+    @property
+    def jumpVects(self):
+        return self.__jumpVects
+
+    @property
+    def moveVects(self):
+        return self.__moveVects
+
+    def changeJumpVects(self, new):
+        self.__jumpVects = new
+
+    def changeMoveVects(self, new):
+        self.__moveVects = new
+
+
+    def getPromoted(self):
         return King(self.colour, self.direction, self.x, self.y)
 
     def __repr__(self) -> str:
@@ -55,8 +77,9 @@ class Stone(Piece):
 class King(Piece):
     def __init__(self, colour, direction, x, y):
         super().__init__(colour, direction, x, y)
-        self.isStone = False
-        self.vectors = [[-2, -2], [-2, 2], [2, -2], [2, 2]]
+        self.changeIsStone(False)
+        self.changeJumpVects([[-2, -2], [-2, 2], [2, -2], [2, 2]])
+        self.changeMoveVects([[-1, -1], [-1, 1], [1, -1], [1, 1]])
 
     def __repr__(self) -> str:
         if self.direction == 1:

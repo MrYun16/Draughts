@@ -5,12 +5,13 @@ from copy import deepcopy
 class Game:  
     EMPTY = "-"
     VECTS = [[-2, -2], [-2, 2], [2, -2], [2, 2]]
-    def __init__(self, player1, player2):
+    def __init__(self, player1, player2, boardLen):
         self.__player1 = player1
         self.__player2 = player2
+        self.__boardLen = boardLen
         self.__currentPlayer = self.__player1
         self.__jumpingPiece = None # piece that must keeping jumping if possible
-        self.__board = [[self.EMPTY for _ in range(8)] for _ in range(8)]
+        self.__board = [[self.EMPTY for _ in range(self.boardLen)] for _ in range(self.boardLen)]
         
         self.__boardHistory = []
         self.__piecesHistory = [] # contains [player1.numpieces, player2.numpieces]
@@ -18,24 +19,46 @@ class Game:
         self.__jumpingPieceHistory = []
         #self.__justUndoed = False
         self.prepareBoard()
+        print(len(self.__board))
         self.updateHistory()
-        """
-        self.__board = [[self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, Stone("white", True, 1, 4, 0), self.EMPTY, self.EMPTY, self.EMPTY],
-        [self.EMPTY, self.EMPTY, Stone("white", True, 1, 2, 1), self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, ],
-        [self.EMPTY, Stone("black", False, -1, 1, 2), self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, ],
-        [self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, ],
-        [self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, ],
-        [self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, ],
-        [self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, ],
-        [self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, self.EMPTY, ]]
-        """
+
+    @property
+    def boardLen(self):
+        return self.__boardLen
+
+    def prepareBoard(self): # self, colour, direction, x, y
+        for col in range(0, self.boardLen, 2):
+            self.__board[0][col] = Stone("white", 1, col, 0)
+        for col in range(1, self.boardLen, 2):
+            self.__board[1][col] = Stone("white", 1, col, 1)
+        for col in range(0, self.boardLen, 2):
+            self.__board[2][col] = Stone("white", 1, col, 2)
+        
+        for col in range(1, self.boardLen, 2):
+            self.__board[5][col] = Stone("black", -1, col, 5)
+        for col in range(0, self.boardLen, 2):
+            self.__board[6][col] = Stone("black", -1, col, 6)
+        for col in range(1, self.boardLen, 2):
+            self.__board[7][col] = Stone("black", -1, col, 7)
+
+    @property
+    def currentPlayer(self):
+        return self.__currentPlayer
+
+    @property
+    def jumpingPiece(self):
+        return self.__jumpingPiece
+
+    @property
+    def currentPlayer(self):
+        return self.__currentPlayer
 
     @property
     def board(self):
         return self.__board
 
     def undo(self): # needs to be finished
-        print(f"before: {self.__currentPlayerHistory}")
+        #print(f"before: {self.__currentPlayerHistory}")
         
         #if self.__justUndoed:
         #    raise GameError("Already undoed")
@@ -54,7 +77,7 @@ class Game:
         self.__jumpingPiece = self.__jumpingPieceHistory[-1]
         self.__currentPlayer = self.__player1 if self.__currentPlayerHistory[-1] == 1 else self.__player2
     
-        print(f"after: {self.__currentPlayerHistory}, current player: {self.__currentPlayer.direction}")    
+        #print(f"after: {self.__currentPlayerHistory}, current player: {self.__currentPlayer.direction}")    
 
     def updateHistory(self):
         self.__boardHistory.append(deepcopy(self.__board))
@@ -62,24 +85,11 @@ class Game:
         self.__jumpingPieceHistory.append(self.__jumpingPiece)
         self.__currentPlayerHistory.append(1 if self.__currentPlayer.colour == self.__player1.colour else -1)
         self.__justUndoed = False
-        print(1)
+        #print(1)
 
-    def prepareBoard(self): # self, colour, direction, x, y
-        for col in range(0, 8, 2):
-            self.__board[0][col] = Stone("white", 1, col, 0)
-        for col in range(1, 8, 2):
-            self.__board[1][col] = Stone("white", 1, col, 1)
-        for col in range(0, 8, 2):
-            self.__board[2][col] = Stone("white", 1, col, 2)
+    
         
-        for col in range(1, 8, 2):
-            self.__board[5][col] = Stone("black", -1, col, 5)
-        for col in range(0, 8, 2):
-            self.__board[6][col] = Stone("black", -1, col, 6)
-        for col in range(1, 8, 2):
-            self.__board[7][col] = Stone("black", -1, col, 7)
-        
-    def ownPiece(self, x, y): # accounts for empty sqr
+    def checkIsOwnPiece(self, x, y): # accounts for empty sqr, 1 indexed
         x -= 1
         y -= 1
 
@@ -90,7 +100,19 @@ class Game:
         elif currentPiece.colour != self.__currentPlayer.colour:
             raise GameError("Not your piece")  
 
-    def vacantSquare(self, x, y):
+    def getOwnPieces(self):
+        pieces = []
+        for y in range(self.boardLen):
+            for x in range(self.boardLen):
+                try:
+                    self.checkIsOwnPiece(x+1, y+1)
+                    pieces.append(self.__board[y][x])
+                except:
+                    pass
+        return pieces
+
+
+    def checkIsVacant(self, x, y):
         x -= 1
         y -= 1
         if self.__board[y][x] != self.EMPTY:
@@ -102,12 +124,13 @@ class Game:
         x2 = x2 - 1
         y2 = y2 - 1
 
-        currentPiece = self.__board[y1][x1] 
+        #print("in game", x1, y1, x2, y2)
 
+        currentPiece = self.__board[y1][x1] 
 
         if self.__jumpingPiece != None: # this is when player is in jumping spree loop
             if self.__jumpingPiece != currentPiece:
-                raise GameError("Must move same piece as it can jump again")
+                raise GameError("1.Must move same piece as it can jump again")
             elif self.isJump(currentPiece, x2, y2):
                 self.jump(currentPiece, x2, y2)
                 if self.canJump(self.__board[y2][x2]):
@@ -116,32 +139,32 @@ class Game:
                     self.__jumpingPiece = None
     
             else:
-                raise GameError("Not possible")
+                raise GameError("2.Not possible")
         elif self.__jumpingPiece == None: # actual moving/jumping sequences - not in jumping spree
             if self.playerCanJump():
                 if self.isMove(currentPiece, x2, y2):
-                    raise GameError("Jump is possible")
+                    raise GameError("3.Jump is possible")
                 elif self.isJump(currentPiece, x2, y2):
                     self.jump(currentPiece, x2, y2)
                     if self.canJump(currentPiece):
                         self.__jumpingPiece = currentPiece # entering jumping loop
        
                 else:
-                    raise GameError("Move not possible")
+                    raise GameError("4.Move not possible")
             else:
                 if self.isMove(currentPiece, x2, y2):
                     self.move(currentPiece, x2, y2)
                     self.__jumpingPiece = None
                    
                 else:
-                    raise GameError("Move not possible")
+                    raise GameError("5.Move not possible")
 
         
         if not self.__jumpingPiece: # it exists
             self.switchTurn()
 
         if (y2 == 0 or y2 == 7) and self.__board[y2][x2].isStone:
-            self.__board[y2][x2] = self.__board[y2][x2].promoted()
+            self.__board[y2][x2] = self.__board[y2][x2].getPromoted()
             if self.__jumpingPiece != None: # was on a jumping streak
                 self.__jumpingPiece = None # end the streak
                 self.switchTurn()
@@ -149,61 +172,29 @@ class Game:
         self.updateHistory()
 
     def playerCanJump(self):
-        if self.__currentPlayer.direction == 1:
-          
-            for y in range(8):
-                for x in range(8):
-                    piece = self.__board[y][x]
-                    if piece != self.EMPTY and piece.direction == self.__currentPlayer.direction:
-                        if self.canJump(piece):
-                            return True
-        else:
-            for y in range(7, -1, -1):
-                for x in range(8):
-                    piece = self.__board[y][x]
-                    if piece != self.EMPTY:
-                        if self.canJump(piece):
-                            return True
+        for y in range(self.boardLen):
+            for x in range(self.boardLen):
+                piece = self.__board[y][x]
+                if piece != self.EMPTY and piece.colour == self.__currentPlayer.colour:
+                    if self.canJump(piece):
+                        return True
         return False
     
 
     def canJump(self, currentPiece):
-        for vect in currentPiece.vectors: # [[2, -2], [2, 2]] for direction 1
-            x2 = currentPiece.x + vect[1]
-            y2 = currentPiece.y + vect[0]
-            if x2 in range(8) and y2 in range(8):
-                if self.isJump(currentPiece, x2, y2):
-                    return True
+        if len(self.getSqrsToJumpTo(currentPiece)) > 0:
+            return True
         return False
 
     def isJump(self, currentPiece, x2, y2): 
-        if min([currentPiece.x, currentPiece.y, x2, y2]) < 0 or max([currentPiece.x, currentPiece.y, x2, y2]) >= 8:
-            return False
-        dx, dy = x2 - currentPiece.x, y2 - currentPiece.y
-        if currentPiece.isStone:
-            
-            if abs(dx) == 2 and dy == self.__currentPlayer.direction * 2 and self.__board[int(0.5*(currentPiece.y+y2))][int(0.5*(currentPiece.x+x2))] != self.EMPTY and self.__board[int(0.5*(currentPiece.y+y2))][int(0.5*(currentPiece.x+x2))].direction != self.__currentPlayer.direction and self.__board[y2][x2] == self.EMPTY:
-                return True
-            return False
-        else: # is a king
-            
-            if abs(dx) == 2 and abs(dy) == 2 and self.__board[int(0.5*(currentPiece.y+y2))][int(0.5*(currentPiece.x+x2))] != self.EMPTY and self.__board[int(0.5*(currentPiece.y+y2))][int(0.5*(currentPiece.x+x2))].colour != self.__currentPlayer.colour and self.__board[y2][x2] == self.EMPTY:
-                return True
-            return False
+        if [x2, y2] in self.getSqrsToJumpTo(currentPiece):
+            return True
+        return False
 
     def isMove(self, currentPiece, x2, y2):
-        if min([currentPiece.x, currentPiece.y, x2, y2]) < 0 or max([currentPiece.x, currentPiece.y, x2, y2]) >= 8:
-            return False
-        dx, dy = x2 - currentPiece.x, y2 - currentPiece.y
-        if currentPiece.isStone:
-            if abs(dx) == 1 and dy == self.__currentPlayer.direction: # one unit move, moving square always unoccupied
-                return True
-            return False
-        else:  # is a king
-            if abs(dx) == 1 and abs(dy) == 1:
-                return True
-            return False
-  
+        if [x2, y2] in self.getSqrsToMoveTo(currentPiece):
+            return True
+        return False
     def move(self, currentPiece, x2, y2):
         self.__board[y2][x2] = currentPiece
         self.__board[currentPiece.y][currentPiece.x] = self.EMPTY
@@ -234,9 +225,31 @@ class Game:
             return self.__player2.name
         return None
 
+    def nextCoordsViaVectors(self, piece, vectors): #ensures coords are empty and in range
+        coords = []
+        for vect in vectors:
+            #print("vector", vect)
+            x2 = piece.x + vect[0]
+            y2 = piece.y + vect[1]
+            #print(x2, y2)
+            if x2 in range(self.boardLen) and y2 in range(self.boardLen) and self.__board[y2][x2] == self.EMPTY:
+                coords.append([x2,y2])
+        return coords
+
+    def getSqrsToJumpTo(self, piece): # return coords
+        temp = self.nextCoordsViaVectors(piece, piece.jumpVects)
+        coords = []
+        for coord in temp:
+            middlePiece = self.__board[int((coord[1]+piece.y)/2)][int((coord[0]+piece.x)/2)]
+            if middlePiece != self.EMPTY and middlePiece.colour != self.__currentPlayer.colour:
+                coords.append(coord)
+        return coords
+
+    def getSqrsToMoveTo(self, piece):
+        return self.nextCoordsViaVectors(piece, piece.moveVects)
 
     def __repr__(self):
-        result = "  " + " ".join(map(str, list(col for col in range(1, 9))))
+        result = "  " + " ".join(map(str, list(col for col in range(1, self.__boardLen+1))))
         for i, row in enumerate(self.__board):
             result += f"\n{i+1} " + " ".join(str(x) for x in row)
         result += f"\n{self.__player1.name}({self.__player1.colour}): {self.__player1.numPieces} {self.__player2.name}({self.__player2.colour}): {self.__player2.numPieces}"
