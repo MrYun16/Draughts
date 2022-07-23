@@ -82,14 +82,5 @@ classDiagram
     }
             
 
-sequenceDiagram
-    
-    player1->>+Ui: I clicked my piece
-    Ui->>+Game: checkIsOwnPiece
-    Game-->>-Ui: No GameError
-    player1->>+Ui: I clicked my dest. square
-    Ui->>+Game: checkIsVacant
-    Game-->>-Ui: No GameError
-    Ui->>+Game: play
 
 
