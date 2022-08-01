@@ -17,6 +17,7 @@ class Game:
         self.__piecesHistory = [] # contains [player1.numpieces, player2.numpieces]
         self.__currentPlayerHistory = [] # uses player's direction
         self.__jumpingPieceHistory = []
+        self.__resigned = None
         #self.__justUndoed = False
         self.prepareBoard()
         print(len(self.__board))
@@ -117,6 +118,9 @@ class Game:
         y -= 1
         if self.__board[y][x] != self.EMPTY:
             raise GameError("Square occupied")
+
+    def resign(self):
+        self.__resigned = self.__currentPlayer
 
     def play(self, x1, y1, x2, y2): # accepts 1 indexed
         x1 = x1 - 1
@@ -219,10 +223,12 @@ class Game:
             self.__currentPlayer = self.__player1
 
     def getWinner(self):
+        if self.__resigned:
+            return self.__resigned
         if self.__player1.numPieces == 0:
-            return self.__player1.name
+            return self.__player1
         elif self.__player2.numPieces == 0:
-            return self.__player2.name
+            return self.__player2
         return None
 
     def nextCoordsViaVectors(self, piece, vectors): #ensures coords are empty and in range
