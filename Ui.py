@@ -2,6 +2,7 @@ from Game import GameError, Game
 from tkinter import *
 from Player import Player, randomAI
 from itertools import product
+from Database import dbInterface
 
 class Ui:
     def __init__(self, game):
@@ -56,7 +57,9 @@ class Gui:
         self.__square1col = "white"
         self.__square2col = "brown"
         self.__gameOnGoing = False
+        self.__dbInterface = dbInterface("database.db")
         self.__login()
+        self.__name = None
         
         Button(
             frame,
@@ -89,11 +92,12 @@ class Gui:
             command=self.__quit 
         ).pack(fill=X) 
 
-    def __login(self):
+    def __login(self): # bad code
         loginWindow = Toplevel(self.__root)
         self.__username = Entry(loginWindow, width=50) # ???
         self.__password = Entry(loginWindow, width=50) # ???
-        
+
+
         self.__username.grid(row=0, column=0)
         Label(loginWindow, text="Username").grid(row=0, column=1)
         self.__password.grid(row=1, column=0)
@@ -102,7 +106,15 @@ class Gui:
         Button(loginWindow, text="Submit", command = self.__handleAccountInput).grid(row=3)
 
     def __handleAccountInput(self):
-        
+        if self.__dbInterface.loginValid(self.__username.get(), self.__password.get()):
+            self.__name = self.__username.get()
+            print("yay")
+            #self.loginWindow.destroy()
+        else:
+            print("no")
+            return
+
+            
 
     def __onePlayer(self):
         if self.__gameOnGoing:

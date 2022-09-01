@@ -8,21 +8,28 @@ class dbInterface:
     NUMGAMES = 1
     WINS = 2
     LOSSES = 3
-    def __init__(self, dbName, player1, game) -> None: # only update player1
+    def __init__(self, dbName) -> None: # only update player1
         self.__dbName = dbName
-        self.__player1 = player1
-        self.__game = game
         self.__connect()
 
-    def getData(self):
-        self.__cur.execute("SELECT * FROM PlayerInfo WHERE name = ?", (self.__player1.name,))
+    def loginValid(self, username, password1):
+        statement = f"SELECT * from Accounts WHERE username='{username}' AND password='{password1}'"
+        self.__cur.execute(statement)
+        playerName = self.__cur.fetchall()
+        if not playerName:
+            return False
+        self.__playerName = playerName
+        return True
+
+    def getPlayerData(self):
+        self.__cur.execute("SELECT * FROM PlayerInfo WHERE name = ?", (self.__playerName,))
         data = self.__cur.fetchall()
         return data
     
-    def update(self): # can be implemented better
-        data = list(self.getData()[0])
+    def update(self, won): # can be implemented better
+        data = list(self.getPlayerData()[0])
         data[self.NUMGAMES] += 1
-        if self.__player1 == self.__game.getWinner():
+        if won:
             data[self.WINS] += 1
         else:
             data[self.LOSSES] += 1
@@ -33,11 +40,7 @@ class dbInterface:
         self.__con = connect(self.__dbName)
         self.__cur = self.__con.cursor()
         
-        #self.__cur.execute('''CREATE TABLE PlayerInfo
-        #               (name text, numGames real, wins real, losses real)''') 
-        #self.__cur.execute("INSERT INTO PlayerInfo VALUES ('Yechan', 0, 0, 0)")
-        #self.__con.commit()
-        #self.__con.close()
+
 
 class game:
     def __init__(self, player1) -> None:
@@ -54,3 +57,5 @@ print(a.getData())
 a.update()
 print(a.getData())
 """
+#a = dbInterface("database.db")
+#a.loginValid("MrYun", "123")
