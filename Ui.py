@@ -59,7 +59,10 @@ class Gui:
         self.__gameOnGoing = False
         self.__dbInterface = dbInterface("database.db")
         self.__login()
-        self.__name = None
+        self.__name = StringVar()
+        self.__loggedIn = False
+
+        Label(frame, textvariable=f"{self.__name}").pack()
         
         Button(
             frame,
@@ -107,19 +110,11 @@ class Gui:
 
     def __handleAccountInput(self):
         if self.__dbInterface.loginValid(self.__username.get(), self.__password.get()):
-            self.__name = self.__username.get()
-            print("yay")
-            #self.loginWindow.destroy()
+            self.__name.set(f"welcome {self.__username.get()}")
+            self.__loggedIn = True
         else:
             print("no")
             return
-
-            
-
-    def __onePlayer(self):
-        if self.__gameOnGoing:
-            return
-        self.__AImenu()
         
 
     def __AImenu(self):
@@ -128,26 +123,33 @@ class Gui:
         AIwindow = Toplevel(self.__root)
         AIwindow.title("AI difficulty")
 
-        clickedEasy=lambda: self.__playWindow(Player("Player1", "white", 1), randomAI("Player2", "black", -1), "Two Player")
+        clickedEasy=lambda: self.__playWindow(Player(self.__name, "white", 1), randomAI("Player2", "black", -1), "Two Player")
 
         lvlsFrame = Frame(AIwindow)
         Button(lvlsFrame, text="Easy", command = clickedEasy, pady=20).grid(row=0,column=0)
         Button(lvlsFrame, text="Hard", pady=20).grid(row=1,column=0)
         lvlsFrame.pack()
     
+    def __onePlayer(self):
+        if self.__gameOnGoing or not self.__loggedIn:
+            return
+        self.__AImenu()
+
     def __twoPlayer(self):
-        self.__playWindow(Player("Player1", "white", 1), Player("Player2", "black", -1), "Two Player")
+        if self.__gameOnGoing or not self.__loggedIn:
+            return
+        self.__playWindow(Player(self.__name, "white", 1), Player("Player2", "black", -1), "Two Player")
         self.__gameOnGoing = True
 
     def __statistics(self):
-        pass
+        if self.__gameOnGoing or not self.__loggedIne:
+            return
 
     def __settings(self):
-        pass
+        if self.__gameOnGoing or not self.__loggedIn:
+            return
 
     def __playWindow(self, player1, player2, windowName): # AI plays downwards
-        if self.__gameOnGoing:
-            return
         self.__gameOnGoing = True
         self.boardLen = 8
         self.player1 = player1
