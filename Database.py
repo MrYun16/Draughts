@@ -1,6 +1,60 @@
 from sqlite3 import *
 from Player import *
+from contextlib import contextmanager
 
+
+class dbInterface2:
+    ...
+    def __init__(self, dbName):
+        self.__dbName = dbName
+        NAME = 0
+        NUMGAMES = 1
+        WINS = 2
+        LOSSES = 3
+
+    def loginValid(self, username, password1):
+        with self.dbConnnect(self.__dbName) as db:
+            statement = f"SELECT * from Accounts WHERE username='{username}' AND password='{password1}'"
+            playerName = db.fetchall()
+            db.execute(statement)
+            playerName = db.fetchall()
+            if not playerName:
+                return False
+            self.__playerName = playerName
+            return True
+
+    def getPlayerData(self):
+        with self.dbConnnect(self.__dbName) as db:
+            db.execute("SELECT * FROM PlayerInfo WHERE name = ?", (self.__playerName,))
+            data = db.fetchall()
+            return data
+    
+    def update(self, won): # can be implemented better
+        with self.dbConnnect(self.__dbName) as db:
+            data = list(self.getPlayerData()[0])
+            data[self.NUMGAMES] += 1
+            if won:
+                data[self.WINS] += 1
+            else:
+                data[self.LOSSES] += 1
+
+            db.execute("UPDATE PlayerInfo SET name = ?, numGames = ?, wins = ?, losses = ?", data)
+
+    def __connect(self):
+        self.__con = connect(self.__dbName)
+        self.__cur = self.__con.cursor()
+        
+
+
+    @contextmanager
+    def dbConnnect(db):
+        conn = connect(db)
+        try:
+            cur = conn.cursor()
+            yield cur
+        finally:
+            conn.commit()
+            conn.close()
 
 
 class dbInterface:
