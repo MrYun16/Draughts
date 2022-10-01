@@ -1,8 +1,10 @@
+from msilib.schema import Font
 from Game import GameError, Game
 from tkinter import *
 from Player import Player, randomAI
 from itertools import product
 from Database import dbInterface
+from tkmacosx import ColorVar
 
 class Ui:
     def __init__(self, game):
@@ -55,12 +57,12 @@ class Gui:
         frame.pack()
         self.__root = root
         self.__square1col = "white"
-        self.__square2col = "brown"
+        self.__square2col = "red"
         self.__gameOnGoing = False
         self.__dbInterface = dbInterface("database.db")
         self.__login()
         self.__name = StringVar()
-        self.__loggedIn = False
+        self.__loggedIn = True # needs to be False
 
         Label(frame, textvariable=f"{self.__name}").pack()
         
@@ -123,7 +125,7 @@ class Gui:
         AIwindow = Toplevel(self.__root)
         AIwindow.title("AI difficulty")
 
-        clickedEasy=lambda: self.__playWindow(Player(self.__name, "white", 1), randomAI("Player2", "black", -1), "Two Player")
+        clickedEasy=lambda: self.__playWindow(Player(str(self.__name.get()), "white", 1), randomAI("Player2", "black", -1), "Two Player")
 
         lvlsFrame = Frame(AIwindow)
         Button(lvlsFrame, text="Easy", command = clickedEasy, pady=20).grid(row=0,column=0)
@@ -142,7 +144,7 @@ class Gui:
         self.__gameOnGoing = True
 
     def __statistics(self):
-        if self.__gameOnGoing or not self.__loggedIne:
+        if self.__gameOnGoing or not self.__loggedIn:
             return
 
     def __settings(self):
@@ -155,7 +157,8 @@ class Gui:
         self.player1 = player1
         self.player2 = player2
         self.__game = Game(player1, player2, self.boardLen)
-        self.__highlightedSqr = None #indexed 1
+        self.__highlightedSqr = None #indexed 1, 3rd element is colour of original
+        self.__highlightedOriginalCol = None
 
         gameWindow = Toplevel(self.__root)
         gameWindow.title(windowName)
@@ -172,23 +175,35 @@ class Gui:
 
         boardFrame = Frame(gameWindow)
         boardFrame.grid(row=1,column=0, sticky="NSEW")
-        self.__buttons = [[None for _ in range(self.boardLen)] for _ in range(self.boardLen)] # making board
+        self.__buttonSymbols = [[None for _ in range(self.boardLen)] for _ in range(self.boardLen)] # making board
+        self.__buttonColours = [[None for _ in range(self.boardLen)] for _ in range(self.boardLen)]
+        
         for y, x in product(range(self.boardLen), range(self.boardLen)):
-            square = StringVar()
-            square.set(self.__game.at(x,y))
-            self.__buttons[y][x] = square
+            btnCol = ColorVar()
+            squareSymbol = StringVar()
+            squareSymbol.set(self.__game.at(x,y))
+            self.__buttonSymbols[y][x] = squareSymbol
+            self.__buttonColours[y][x] = btnCol
             if (x+y)%2== 0:
-                btnCol = self.__square1col  
+                btnCol.set(self.__square1col) 
             else:
-                btnCol = self.__square2col
+                btnCol.set(self.__square2col)
             cmd = lambda r=y, c=x: self.__sqrClicked(c,r)
+            
+            import tkinter.font as font
+
+            #create Font object
+            myFont = font.Font(family='Helvetica', size=15)
+
             Button(
                 boardFrame,
-                textvariable=square,
+                textvariable=squareSymbol,
                 command=cmd,
                 bg = btnCol,
                 height=3,
-                width=6 # HOW TO CHANGE SIZE OF TEXT
+                width=6,
+                font=myFont
+                
             ).grid(row=y,column=x)
 
 
@@ -211,7 +226,18 @@ class Gui:
         Button(gameWindow, text="Dismiss", command=dismissPressed).grid(row=4,column=0)
         Button(gameWindow, text="Undo", command=self.__undo).grid(row=4,column=1)
 
-    
+    def __highlight(self, col, row):
+        originalColour = self.__buttonColours[row-1][col-1]
+        self.__highlightedOriginalCol = originalColour.get()
+        self.__highlightedSqr = [row, col]
+        self.__buttonColours[row-1][col-1].set("yellow")
+      
+    def unhighlight(self):
+        row, col = self.__highlightedSqr[0]-1, self.__highlightedSqr[1]-1
+        self.__buttonColours[row][col].set(self.__highlightedOriginalCol)
+        self.__highlightedOriginalCol = None
+        self.__highlightedSqr = None
+
     def dismiss(self, window):
         self.__gameOnGoing = False
         window.destroy()
@@ -236,36 +262,44 @@ class Gui:
             self.__gameOnGoing = False
 
     def __handleInput(self, x, y): # 0 indexed
+        #self.__buttonColours[4][2].set("yellow")
         if self.__gameOnGoing: #while game ongoing
             x += 1
-            y += 1
+            y += 1 # 1 indexed
             if self.__highlightedSqr == None: #hasn't picked first square
                 try:
                     self.__game.checkIsOwnPiece(x, y)
-                    self.__highlightedSqr = [x, y]
+                    #self.__highlightedSqr = [x, y]
                     self.__msgText.set(f"highlighted {x}, {y}")
+                    self.__highlight(x,y)
                 except GameError as e:
                     self.__msgText.set(e)
                     
             else: #already picked first square
-                if x == self.__highlightedSqr[0] and y == self.__highlightedSqr[1]:
+                if x == self.__highlightedSqr[1] and y == self.__highlightedSqr[0]:
                     self.__msgText.set(f"highlighted square cancelled")
-                    self.__highlightedSqr = None
+                  #  self.__buttons[self.__highlightedSqr[1]][self.__highlightedSqr[0]].bg ==self.__highlightedSqr[2]
+                    #self.__highlightedSqr = None
+                    self.unhighlight()
+
                 else:
                     try:
                         self.__game.checkIsVacant(x, y)
                         try:
-                            self.__game.play(self.__highlightedSqr[0], self.__highlightedSqr[1], x, y)
+                            self.__game.play(self.__highlightedSqr[1], self.__highlightedSqr[0], x, y)
                             self.__msgText.set("successful")
                             self.__updateBoard()
-                            self.__highlightedSqr = None
+                            #self.__highlightedSqr = None
+                            self.unhighlight()
                             self.__handleIfWinner()
                         except GameError as e:
                             self.__msgText.set(e)
-                            self.__highlightedSqr = None
+                            #self.__highlightedSqr = None
+                            self.unhighlight()
                     except GameError as e:
                         self.__msgText.set(e)
-                        self.__highlightedSqr = None
+                        #self.__highlightedSqr = None
+                        self.unhighlight()
             self.__handleAI()
                 
 
@@ -277,7 +311,7 @@ class Gui:
 
     def __updateBoard(self):
         for y, x in product(range(self.boardLen), range(self.boardLen)):
-            self.__buttons[y][x].set(self.__game.at(x,y))
+            self.__buttonSymbols[y][x].set(self.__game.at(x,y))
         self.numPieces1.set(self.player1.numPieces)
         self.numPieces2.set(self.player2.numPieces)
 
