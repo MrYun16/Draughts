@@ -63,6 +63,7 @@ class Gui:
         self.__login()
         self.__name = "MrYun" # string
         self.__loggedIn = True # needs to be False
+        self.__timer = True # False for default
 
         #Label(frame, textvariable=f"welcome {self.__name}").pack()
         menuHeader = StringVar()
@@ -163,6 +164,29 @@ class Gui:
         if self.__gameOnGoing or not self.__loggedIn:
             return
 
+        settingsWindow = Toplevel(self.__root)
+        settingsWindow.title("settings")
+        frame = Frame(settingsWindow)
+        frame.pack()
+
+        Label(frame,text="Timer on")
+        def timerChoice():
+            if timerOn.get():
+                self.__timer = True
+            else:
+                self.__timer = False
+            print(self.__timer)
+        timerOn = BooleanVar()
+        timerOn.set(False)
+        Label(frame, text="hi").grid(row=0, column=0)
+        Radiobutton(frame,text="yes",variable=timerOn,command=timerChoice,value=True).grid(row=0)
+        Radiobutton(frame,text="no",variable=timerOn,command=timerChoice,value=False).grid(row=1)
+        
+
+        
+
+        
+
 
     def __playWindow(self, player1, player2, windowName): # AI plays downwards
         self.__gameOnGoing = True
@@ -170,7 +194,7 @@ class Gui:
         self.player1 = player1
         self.player2 = player2
         self.__game = Game(player1, player2, self.boardLen)
-        self.__highlightedSqr = None #indexed 1, 3rd element is colour of original
+        self.__highlightedSqr = None
         self.__highlightedOriginalCol = None
 
         gameWindow = Toplevel(self.__root)
