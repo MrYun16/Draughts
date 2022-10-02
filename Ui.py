@@ -61,10 +61,14 @@ class Gui:
         self.__gameOnGoing = False
         self.__dbInterface = dbInterface("database.db")
         self.__login()
-        self.__name = StringVar()
+        self.__name = "MrYun" # string
         self.__loggedIn = True # needs to be False
 
-        Label(frame, textvariable=f"{self.__name}").pack()
+        #Label(frame, textvariable=f"welcome {self.__name}").pack()
+        menuHeader = StringVar()
+        menuHeader.set(f"welcome {self.__name}")
+        Label(frame, textvariable=menuHeader).pack()
+        #self.__name.set("MrYun") # only for testing
         
         Button(
             frame,
@@ -112,7 +116,7 @@ class Gui:
 
     def __handleAccountInput(self):
         if self.__dbInterface.loginValid(self.__username.get(), self.__password.get()):
-            self.__name.set(f"welcome {self.__username.get()}")
+            self.__name = self.__username.get()
             self.__loggedIn = True
         else:
             print("no")
