@@ -146,10 +146,19 @@ class Gui:
     def __statistics(self):
         if self.__gameOnGoing or not self.__loggedIn:
             return
+        statsWindow = Toplevel(self.__root)
+        statsWindow.title("Statistics")
+
+        frame = Frame(statsWindow)
+
+        
+        Label(frame, text=self.player1.name).grid(row=0,column=0)
+
 
     def __settings(self):
         if self.__gameOnGoing or not self.__loggedIn:
             return
+
 
     def __playWindow(self, player1, player2, windowName): # AI plays downwards
         self.__gameOnGoing = True
@@ -308,6 +317,8 @@ class Gui:
             output = self.__game.currentPlayer.findMove(self.__game)
             self.__game.play(output[0]+1, output[1]+1, output[2]+1, output[3]+1)
             self.__updateBoard()
+            if self.__game.currentPlayer.isAI:
+                self.__handleAI()
 
     def __updateBoard(self):
         for y, x in product(range(self.boardLen), range(self.boardLen)):
