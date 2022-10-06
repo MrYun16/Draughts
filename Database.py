@@ -5,12 +5,13 @@ from contextlib import contextmanager
 
 class dbInterface2:
     ...
+    NAME = 0
+    NUMGAMES = 1
+    WINS = 2
+    LOSSES = 3
     def __init__(self, dbName):
         self.__dbName = dbName
-        NAME = 0
-        NUMGAMES = 1
-        WINS = 2
-        LOSSES = 3
+        
 
     def loginValid(self, username, password1):
         with self.dbConnnect(self.__dbName) as db:
@@ -32,18 +33,13 @@ class dbInterface2:
     def update(self, won): # can be implemented better
         with self.dbConnnect(self.__dbName) as db:
             data = list(self.getPlayerData()[0])
-            data[self.NUMGAMES] += 1
+            data[NUMGAMES] += 1
             if won:
-                data[self.WINS] += 1
+                data[WINS] += 1
             else:
-                data[self.LOSSES] += 1
+                data[LOSSES] += 1
 
             db.execute("UPDATE PlayerInfo SET name = ?, numGames = ?, wins = ?, losses = ?", data)
-
-    def __connect(self):
-        self.__con = connect(self.__dbName)
-        self.__cur = self.__con.cursor()
-        
 
 
     @contextmanager
