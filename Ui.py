@@ -1,4 +1,5 @@
 from msilib.schema import Font
+from turtle import width
 from Game import GameError, Game
 from tkinter import *
 from Player import Player, randomAI
@@ -24,7 +25,7 @@ class Ui:
                     print("Invalid input - please try again")
         return (x, y)
 
-    def run(self): # hi
+    def run(self): 
         while self.__game.getWinner() == None:
             print(self.__game)
             notPossible = True
@@ -165,22 +166,35 @@ class Gui:
             return
 
         settingsWindow = Toplevel(self.__root)
+        settingsWindow.geometry("400x400")
         settingsWindow.title("settings")
         frame = Frame(settingsWindow)
         frame.pack()
 
-        Label(frame,text="Timer on")
-        def timerChoice():
-            if timerOn.get():
-                self.__timer = True
-            else:
-                self.__timer = False
-            print(self.__timer)
-        timerOn = BooleanVar()
-        timerOn.set(False)
-        Label(frame, text="hi").grid(row=0, column=0)
-        Radiobutton(frame,text="yes",variable=timerOn,command=timerChoice,value=True).grid(row=0)
-        Radiobutton(frame,text="no",variable=timerOn,command=timerChoice,value=False).grid(row=1)
+        initialTime = IntVar()
+        initialTime.set(0)
+        Label(frame, text="Select Time:").grid(row=3,column=1)
+        timerMenu = OptionMenu(frame, initialTime, 60, 120, 600, 1200)
+        timerMenu.config(width=20)
+        timerMenu.grid(row=3,column=2)
+
+        boardLen = IntVar()
+        boardLen.set(8)
+        Label(frame, text="Select board length:").grid(row=4,column=1)
+        boardLenMenu = OptionMenu(frame, boardLen, 6, 8, 10)
+        boardLenMenu.config(width=20)
+        boardLenMenu.grid(row=4,column=2,sticky="EW")
+
+        boardColour = StringVar()
+        boardColour.set("brown")
+        Label(frame, text="Select board colour:").grid(row=5,column=1)
+        boardMenu = OptionMenu(frame, boardColour, "blue", "brown", "green", "red")
+        boardMenu.config(width=20)
+        boardMenu.grid(row=5,column=2,sticky="EW")
+
+
+        
+
         
 
         
