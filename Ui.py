@@ -64,7 +64,7 @@ class Gui:
         self.__login()
         self.__name = "MrYun" # string
         self.__loggedIn = True # needs to be False
-        self.__timer = True # False for default
+        self.__userPreferenceInfo = {"boardLen":8, "boardColour":"brown", "time":120}
 
         #Label(frame, textvariable=f"welcome {self.__name}").pack()
         menuHeader = StringVar()
@@ -165,37 +165,38 @@ class Gui:
         if self.__gameOnGoing or not self.__loggedIn:
             return
 
+        def updatePreference(key, value):
+            self.__userPreferenceInfo[key] = value
+            print(self.__userPreferenceInfo[key])
         settingsWindow = Toplevel(self.__root)
         settingsWindow.geometry("400x400")
         settingsWindow.title("settings")
         frame = Frame(settingsWindow)
         frame.pack()
 
+
         initialTime = IntVar()
         initialTime.set(0)
         Label(frame, text="Select Time:").grid(row=3,column=1)
-        timerMenu = OptionMenu(frame, initialTime, 60, 120, 600, 1200)
+        timerMenu = OptionMenu(frame, initialTime, 60, 120, 600, 1200, command= lambda e: updatePreference("time", initialTime.get()))
         timerMenu.config(width=20)
         timerMenu.grid(row=3,column=2)
 
         boardLen = IntVar()
         boardLen.set(8)
         Label(frame, text="Select board length:").grid(row=4,column=1)
-        boardLenMenu = OptionMenu(frame, boardLen, 6, 8, 10)
+        boardLenMenu = OptionMenu(frame, boardLen, 6, 8, 10, command=lambda e: updatePreference("boardLen", boardLen.get()))
         boardLenMenu.config(width=20)
         boardLenMenu.grid(row=4,column=2,sticky="EW")
+
 
         boardColour = StringVar()
         boardColour.set("brown")
         Label(frame, text="Select board colour:").grid(row=5,column=1)
-        boardMenu = OptionMenu(frame, boardColour, "blue", "brown", "green", "red")
+        boardMenu = OptionMenu(frame, boardColour, "blue", "brown", "green", "red", command=lambda e: updatePreference("boardColour", boardColour.get()))
         boardMenu.config(width=20)
         boardMenu.grid(row=5,column=2,sticky="EW")
-
-
-        
-
-        
+  
 
         
 
@@ -204,12 +205,14 @@ class Gui:
 
     def __playWindow(self, player1, player2, windowName): # AI plays downwards
         self.__gameOnGoing = True
-        self.boardLen = 8
         self.player1 = player1
         self.player2 = player2
-        self.__game = Game(player1, player2, self.boardLen)
+        boardLen = self.__userPreferenceInfo["boardLen"]
+        self.__game = Game(player1, player2, boardLen)
         self.__highlightedSqr = None
         self.__highlightedOriginalCol = None
+        
+        print(self.__userPreferenceInfo["boardColour"])
 
         gameWindow = Toplevel(self.__root)
         gameWindow.title(windowName)
@@ -219,26 +222,24 @@ class Gui:
         self.numPieces1 = StringVar()
         self.numPieces1.set(self.player1.numPieces)
         Label(player1Frame, textvariable=self.numPieces1).grid(row=0,column=1)
-        time1 = StringVar()
-        time1.set(self.player1.time)
-        Label(player1Frame, textvariable=time1).grid(row=0,column=2)
+        Label(player1Frame).grid(row=0,column=2)
         player1Frame.grid(row=0,column=0, sticky="NSEW")
 
         boardFrame = Frame(gameWindow)
         boardFrame.grid(row=1,column=0, sticky="NSEW")
-        self.__buttonSymbols = [[None for _ in range(self.boardLen)] for _ in range(self.boardLen)] # making board
-        self.__buttonColours = [[None for _ in range(self.boardLen)] for _ in range(self.boardLen)]
+        self.__buttonSymbols = [[None for _ in range(boardLen)] for _ in range(boardLen)] # making board
+        self.__buttonColours = [[None for _ in range(boardLen)] for _ in range(boardLen)]
         
-        for y, x in product(range(self.boardLen), range(self.boardLen)):
-            btnCol = ColorVar()
+        for y, x in product(range(boardLen), range(boardLen)):
+            sqrCol = StringVar()
             squareSymbol = StringVar()
             squareSymbol.set(self.__game.at(x,y))
             self.__buttonSymbols[y][x] = squareSymbol
-            self.__buttonColours[y][x] = btnCol
+            self.__buttonColours[y][x] = sqrCol
             if (x+y)%2== 0:
-                btnCol.set(self.__square1col) 
+                sqrCol.set("white")
             else:
-                btnCol.set(self.__square2col)
+                sqrCol.set(self.__userPreferenceInfo["boardColour"])
             cmd = lambda r=y, c=x: self.__sqrClicked(c,r)
             
             import tkinter.font as font
@@ -250,7 +251,7 @@ class Gui:
                 boardFrame,
                 textvariable=squareSymbol,
                 command=cmd,
-                bg = btnCol,
+                bg = sqrCol,
                 height=3,
                 width=6,
                 font=myFont
@@ -363,7 +364,8 @@ class Gui:
                 self.__handleAI()
 
     def __updateBoard(self):
-        for y, x in product(range(self.boardLen), range(self.boardLen)):
+        boardLen = self.__userPreferenceInfo["boardLen"]
+        for y, x in product(range(boardLen), range(boardLen)):
             self.__buttonSymbols[y][x].set(self.__game.at(x,y))
         self.numPieces1.set(self.player1.numPieces)
         self.numPieces2.set(self.player2.numPieces)
