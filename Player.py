@@ -57,31 +57,25 @@ class randomAI(AI):
         self.changIsAI(True)
 
     def findMove(self, game):
+        possiblePlays = set()
         if game.jumpingPiece != None: # in jumping spree
             piece = game.jumpingPiece
-            nextCoord = choice(game.getSqrsToJumpTo(piece))
-            return [piece.x, piece.y, nextCoord[0], nextCoord[1]]
+            for toCoord in game.getSqrsToJumpTo(piece):
+                possiblePlays.add([piece.x, piece.y, toCoord[0], toCoord[1]])
+            return choice(possiblePlays)
         elif game.playerCanJump():
-            ownPieces = shuffle(game.getOwnPieces())
             for piece in ownPieces:
                 if len(game.getSqrsToJumpTo(piece)) > 0:
-                #nextCoord = choice(game.getSqrsToJumpTo(piece)
-                    nextCoord = choice(game.getSqrsToJumpTo(piece))
-                    return [piece.x, piece.y, nextCoord[0], nextCoord[1]]
+                    for toCoord in game.getSqrsToJumpTo(piece):
+                        possiblePlays.add([piece.x, piece.y, toCoord[0], toCoord[1]])
+            return choice(possiblePlays)
         else:
             ownPieces = game.getOwnPieces()
-            print(ownPieces[0].moveVects)
-            notFound = True
-            i = 0
-            print("own pieces", ownPieces)
-            while notFound and i < 20:
-                piece = choice(ownPieces) 
+            for piece in ownPieces:
                 if len(game.getSqrsToMoveTo(piece)) > 0:
-                    nextCoord = choice(game.getSqrsToMoveTo(piece))
-                    #print([piece.x, piece.y, nextCoord[0], nextCoord[1]], type(piece.x))
-                    return [piece.x, piece.y, nextCoord[0], nextCoord[1]]
-                i += 1
-            return [1, 5, 2, 6]
+                    for toCoord in game.getSqrsToMoveTo(piece):
+                        possiblePlays.add([piece.x, piece.y, toCoord[0], toCoord[1]])
+            return choice(possiblePlays)
                     
 
 
