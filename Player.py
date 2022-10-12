@@ -62,7 +62,7 @@ class randomAI(AI):
             nextCoord = choice(game.getSqrsToJumpTo(piece))
             return [piece.x, piece.y, nextCoord[0], nextCoord[1]]
         elif game.playerCanJump():
-            ownPieces = game.getOwnPieces()
+            ownPieces = shuffle(game.getOwnPieces())
             for piece in ownPieces:
                 if len(game.getSqrsToJumpTo(piece)) > 0:
                 #nextCoord = choice(game.getSqrsToJumpTo(piece)
@@ -75,10 +75,8 @@ class randomAI(AI):
             i = 0
             print("own pieces", ownPieces)
             while notFound and i < 20:
-                
                 piece = choice(ownPieces) 
                 if len(game.getSqrsToMoveTo(piece)) > 0:
-                    
                     nextCoord = choice(game.getSqrsToMoveTo(piece))
                     #print([piece.x, piece.y, nextCoord[0], nextCoord[1]], type(piece.x))
                     return [piece.x, piece.y, nextCoord[0], nextCoord[1]]
