@@ -8,8 +8,8 @@ from Database import dbInterface
 from tkmacosx import ColorVar
 
 class Ui:
-    def __init__(self, game):
-        self.__game = game
+    def __init__(self):
+        self.__game = Game(Player("Player1", None, 1), Player("Player2", None, -1), 8)
 
     def getInput(self):
         invalid = True
@@ -57,8 +57,6 @@ class Gui:
         frame = Frame(root)
         frame.pack()
         self.__root = root
-        self.__square1col = "white"
-        self.__square2col = "red"
         self.__gameOnGoing = False
         self.__dbInterface = dbInterface("database.db")
         self.__login()
@@ -130,8 +128,7 @@ class Gui:
             return
         AIwindow = Toplevel(self.__root)
         AIwindow.title("AI difficulty")
-
-        clickedEasy=lambda: self.__playWindow(Player(str(self.__name.get()), "white", 1), randomAI("Player2", "black", -1), "Two Player")
+        clickedEasy=lambda: self.__playWindow(Player(self.__name, "white", 1), randomAI("Player2", "black", -1), "Two Player")
 
         lvlsFrame = Frame(AIwindow)
         Button(lvlsFrame, text="Easy", command = clickedEasy, pady=20).grid(row=0,column=0)
@@ -167,13 +164,12 @@ class Gui:
 
         def updatePreference(key, value):
             self.__userPreferenceInfo[key] = value
-            print(self.__userPreferenceInfo[key])
+        
         settingsWindow = Toplevel(self.__root)
         settingsWindow.geometry("400x400")
         settingsWindow.title("settings")
         frame = Frame(settingsWindow)
         frame.pack()
-
 
         initialTime = IntVar()
         initialTime.set(0)
@@ -189,18 +185,12 @@ class Gui:
         boardLenMenu.config(width=20)
         boardLenMenu.grid(row=4,column=2,sticky="EW")
 
-
         boardColour = StringVar()
         boardColour.set("brown")
         Label(frame, text="Select board colour:").grid(row=5,column=1)
         boardMenu = OptionMenu(frame, boardColour, "blue", "brown", "green", "red", command=lambda e: updatePreference("boardColour", boardColour.get()))
         boardMenu.config(width=20)
         boardMenu.grid(row=5,column=2,sticky="EW")
-  
-
-        
-
-        
 
 
     def __playWindow(self, player1, player2, windowName): # AI plays downwards
@@ -208,7 +198,7 @@ class Gui:
         self.player1 = player1
         self.player2 = player2
         boardLen = self.__userPreferenceInfo["boardLen"]
-        self.__game = Game(player1, player2, boardLen)
+        self.__game = Game(player1, player2, boardLen) # making game
         self.__highlightedSqr = None
         self.__highlightedOriginalCol = None
         
@@ -218,12 +208,12 @@ class Gui:
         gameWindow.title(windowName)
 
         player1Frame = Frame(gameWindow)
-        Label(player1Frame, text=self.player1.name).grid(row=0,column=0)
         self.numPieces1 = StringVar()
         self.numPieces1.set(self.player1.numPieces)
-        Label(player1Frame, textvariable=self.numPieces1).grid(row=0,column=1)
-        Label(player1Frame).grid(row=0,column=2)
-        player1Frame.grid(row=0,column=0, sticky="NSEW")
+
+        Label(player1Frame, text=self.player1.name+f"\n{self.numPieces1.get()}", font=("Times",24)).grid(row=0, column=0)
+       # Label(player1Frame, text=)
+        player1Frame.grid(row=0,column=0, sticky="W")
 
         boardFrame = Frame(gameWindow)
         boardFrame.grid(row=1,column=0, sticky="NSEW")
@@ -260,14 +250,13 @@ class Gui:
 
 
         player2Frame = Frame(gameWindow)
-        Label(player2Frame, text=self.player2.name).grid(row=0,column=0)
         self.numPieces2 = StringVar()
         self.numPieces2.set(self.player2.numPieces)
-        Label(player2Frame, textvariable=self.numPieces2).grid(row=0,column=1)
+        Label(player2Frame, text=self.player2.name+f"\n{self.numPieces2.get()}", font=("Times",24)).grid(row=0,column=0)
         time2 = StringVar()
         time2.set(self.player2.time)
-        Label(player2Frame, textvariable=time2).grid(row=0,column=2)
-        player2Frame.grid(row=2,column=0, sticky="S")
+        Label(player2Frame, text=time2.get(), font=("Times",24)).grid(row=0,column=1, sticky="E")
+        player2Frame.grid(row=2,column=0, sticky="W")
 
         self.__msgText = StringVar()
         self.__msgText.set("")

@@ -62,20 +62,19 @@ class randomAI(AI):
             piece = game.jumpingPiece
             for toCoord in game.getSqrsToJumpTo(piece):
                 possiblePlays.add([piece.x, piece.y, toCoord[0], toCoord[1]])
-            return choice(possiblePlays)
         elif game.playerCanJump():
             for piece in ownPieces:
                 if len(game.getSqrsToJumpTo(piece)) > 0:
                     for toCoord in game.getSqrsToJumpTo(piece):
                         possiblePlays.add([piece.x, piece.y, toCoord[0], toCoord[1]])
-            return choice(possiblePlays)
         else:
             ownPieces = game.getOwnPieces()
             for piece in ownPieces:
                 if len(game.getSqrsToMoveTo(piece)) > 0:
                     for toCoord in game.getSqrsToMoveTo(piece):
                         possiblePlays.add([piece.x, piece.y, toCoord[0], toCoord[1]])
-            return choice(possiblePlays)
+        return choice(possiblePlays)
+     
                     
 
 
