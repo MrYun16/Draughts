@@ -3,15 +3,13 @@ this is my orogram
 Example:
 https://mermaid.live/
 
-# class diagram
-here is my diagram
-```mermaid
 classDiagram
     Player <|-- AI
     AI <|-- randomAI
     Game o-- Player
     Gui o-- Game
     Game o-- Piece
+    Game o-- dbInterface
     Piece <|-- Stone
     Piece <|-- King
 
@@ -48,6 +46,12 @@ classDiagram
       -switchTurn()
       -getWinner()
       -updateHistory()
+    }
+    class dbInterface{
+        +loginValid()
+        +getPlayerdata()
+        +update()
+        -dbConnect()
     }
     class Player{
       -numPieces
