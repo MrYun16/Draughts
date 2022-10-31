@@ -3,7 +3,7 @@ from Player import Player
 from copy import deepcopy
 
 class Game:  
-    EMPTY = "-"
+    EMPTY = " " # smth
     VECTS = [[-2, -2], [-2, 2], [2, -2], [2, 2]]
     def __init__(self, player1, player2, boardLen):
         self.__player1 = player1
@@ -20,7 +20,6 @@ class Game:
         self.__resigned = None
         #self.__justUndoed = False
         self.prepareBoard()
-        print(len(self.__board))
         self.updateHistory()
 
     @property
@@ -28,20 +27,16 @@ class Game:
         return self.__boardLen
 
     def prepareBoard(self): # self, colour, direction, x, y
-        for col in range(0, self.boardLen, 2):
-            self.__board[0][col] = Stone("white", 1, col, 0)
-        for col in range(1, self.boardLen, 2):
-            self.__board[1][col] = Stone("white", 1, col, 1)
-        for col in range(0, self.boardLen, 2):
-            self.__board[2][col] = Stone("white", 1, col, 2)
-        
-        for col in range(1, self.boardLen, 2):
-            self.__board[5][col] = Stone("black", -1, col, 5)
-        for col in range(0, self.boardLen, 2):
-            self.__board[6][col] = Stone("black", -1, col, 6)
-        for col in range(1, self.boardLen, 2):
-            self.__board[7][col] = Stone("black", -1, col, 7)
-
+        span = int((self.__boardLen-2)/2)
+        for i in range(span*self.__boardLen):
+            row, col = i//self.__boardLen, i%self.__boardLen
+            if (row+i+1)%2:
+                self.__board[row][col] = Stone("white", 1, col, row)
+        for i in range(span*self.__boardLen):
+            row, col = self.__boardLen-span + i//self.__boardLen, i%self.__boardLen
+            if (row+i+1)%2:
+                self.__board[row][col] = Stone("black", -1, col, row)
+                
     @property
     def currentPlayer(self):
         return self.__currentPlayer
@@ -86,16 +81,13 @@ class Game:
         self.__jumpingPieceHistory.append(self.__jumpingPiece)
         self.__currentPlayerHistory.append(1 if self.__currentPlayer.colour == self.__player1.colour else -1)
         self.__justUndoed = False
-        #print(1)
-
-    
+     
         
     def checkIsOwnPiece(self, x, y): # accounts for empty sqr, 1 indexed
         x -= 1
         y -= 1
 
         currentPiece = self.__board[y][x] 
-        #print(x, y, currentPiece, currentPiece.colour, self.__currentPlayer.colour)
         if currentPiece == self.EMPTY:
             raise GameError("No piece exists here")
         elif currentPiece.colour != self.__currentPlayer.colour:
@@ -128,9 +120,8 @@ class Game:
         x2 = x2 - 1
         y2 = y2 - 1
 
-        #print("in game", x1, y1, x2, y2)
-
         currentPiece = self.__board[y1][x1] 
+        #print("currentpiece", currentPiece, currentPiece.moveVects)
 
         if self.__jumpingPiece != None: # this is when player is in jumping spree loop
             if self.__jumpingPiece != currentPiece:
@@ -141,7 +132,6 @@ class Game:
                     self.__jumpingPiece = self.__board[y2][x2]
                 else:
                     self.__jumpingPiece = None
-    
             else:
                 raise GameError("2.Not possible")
         elif self.__jumpingPiece == None: # actual moving/jumping sequences - not in jumping spree
@@ -152,14 +142,12 @@ class Game:
                     self.jump(currentPiece, x2, y2)
                     if self.canJump(currentPiece):
                         self.__jumpingPiece = currentPiece # entering jumping loop
-       
                 else:
                     raise GameError("4.Move not possible")
             else:
                 if self.isMove(currentPiece, x2, y2):
                     self.move(currentPiece, x2, y2)
                     self.__jumpingPiece = None
-                   
                 else:
                     raise GameError("5.Move not possible")
 
@@ -254,7 +242,7 @@ class Game:
     def getSqrsToMoveTo(self, piece):
         return self.nextCoordsViaVectors(piece, piece.moveVects)
 
-    def __repr__(self):
+    def __str__(self):
         result = "  " + " ".join(map(str, list(col for col in range(1, self.__boardLen+1))))
         for i, row in enumerate(self.__board):
             result += f"\n{i+1} " + " ".join(str(x) for x in row)
