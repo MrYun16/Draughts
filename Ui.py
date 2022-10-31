@@ -2,10 +2,12 @@ from msilib.schema import Font
 from turtle import width
 from Game import GameError, Game
 from tkinter import *
-from Player import Player, randomAI
+from Player import Player, randomAI, hardAI
 from itertools import product
 from Database import dbInterface
 from tkmacosx import ColorVar
+from clock import Timer
+import time
 
 class Ui:
     def __init__(self):
@@ -127,8 +129,8 @@ class Gui:
         if self.__gameOnGoing:
             return
         AIwindow = Toplevel(self.__root)
-        AIwindow.title("AI difficulty")
-        clickedEasy=lambda: self.__playWindow(Player(self.__name, "white", 1), randomAI("Player2", "black", -1), "Two Player")
+        AIwindow.title("AI difficulty") # CHANGE HARD BACK TO RANDOM
+        clickedEasy=lambda: self.__playWindow(Player(self.__name, "white", 1), hardAI("Player2", "black", -1), "Two Player")
 
         lvlsFrame = Frame(AIwindow)
         Button(lvlsFrame, text="Easy", command = clickedEasy, pady=20).grid(row=0,column=0)
@@ -172,9 +174,9 @@ class Gui:
         frame.pack()
 
         initialTime = IntVar()
-        initialTime.set(0)
+        initialTime.set(600)
         Label(frame, text="Select Time:").grid(row=3,column=1)
-        timerMenu = OptionMenu(frame, initialTime, 60, 120, 600, 1200, command= lambda e: updatePreference("time", initialTime.get()))
+        timerMenu = OptionMenu(frame, initialTime, 60, 120, 600, 1200, -1, command= lambda e: updatePreference("time", initialTime.get()))
         timerMenu.config(width=20)
         timerMenu.grid(row=3,column=2)
 
@@ -211,8 +213,8 @@ class Gui:
         self.numPieces1 = StringVar()
         self.numPieces1.set(self.player1.numPieces)
 
-        Label(player1Frame, text=self.player1.name+f"\n{self.numPieces1.get()}", font=("Times",24)).grid(row=0, column=0)
-       # Label(player1Frame, text=)
+        Label(player1Frame, text=self.player1.name, font=("Times",24)).grid(row=0, column=0)
+        Label(player1Frame, textvariable=self.numPieces1, font=("Times",24)).grid(row=0, column=1)
         player1Frame.grid(row=0,column=0, sticky="W")
 
         boardFrame = Frame(gameWindow)
@@ -248,14 +250,22 @@ class Gui:
                 
             ).grid(row=y,column=x)
 
-
+        
         player2Frame = Frame(gameWindow)
         self.numPieces2 = StringVar()
         self.numPieces2.set(self.player2.numPieces)
-        Label(player2Frame, text=self.player2.name+f"\n{self.numPieces2.get()}", font=("Times",24)).grid(row=0,column=0)
-        time2 = StringVar()
-        time2.set(self.player2.time)
-        Label(player2Frame, text=time2.get(), font=("Times",24)).grid(row=0,column=1, sticky="E")
+        Label(player2Frame, text=self.player2.name, font=("Times",24)).grid(row=0,column=0)
+        Label(player2Frame, textvariable=self.numPieces2, font=("Times",24)).grid(row=0,column=1)
+        
+        timeString2 = StringVar()
+        #self.player2.createTimer(self.__userPreferenceInfo["time"], timeString2)
+       # self.player2.startTimer()
+        """
+        for _ in range(10):
+            print("in gui", timeString2.get())
+            time.sleep(2)
+        """
+        Label(player2Frame, text=timeString2.get(), font=("Times",24)).grid(row=0,column=1, sticky="E")
         player2Frame.grid(row=2,column=0, sticky="W")
 
         self.__msgText = StringVar()
@@ -267,12 +277,17 @@ class Gui:
         Button(gameWindow, text="Dismiss", command=dismissPressed).grid(row=4,column=0)
         Button(gameWindow, text="Undo", command=self.__undo).grid(row=4,column=1)
 
+    def updateScoreLabel(self):
+        self.numPieces2.set(self.player2.numPieces)
+        self.numPieces1.set(self.player1.numPieces)
+        print(self.numPieces2.get(), self.numPieces1.get())
+
     def __highlight(self, col, row):
         originalColour = self.__buttonColours[row-1][col-1]
         self.__highlightedOriginalCol = originalColour.get()
         self.__highlightedSqr = [row, col]
         self.__buttonColours[row-1][col-1].set("yellow")
-      
+
     def unhighlight(self):
         row, col = self.__highlightedSqr[0]-1, self.__highlightedSqr[1]-1
         self.__buttonColours[row][col].set(self.__highlightedOriginalCol)
@@ -330,25 +345,27 @@ class Gui:
                             self.__game.play(self.__highlightedSqr[1], self.__highlightedSqr[0], x, y)
                             self.__msgText.set("successful")
                             self.__updateBoard()
-                            #self.__highlightedSqr = None
                             self.unhighlight()
                             self.__handleIfWinner()
+                          #  self.updateScoreLabel()
                         except GameError as e:
                             self.__msgText.set(e)
-                            #self.__highlightedSqr = None
                             self.unhighlight()
                     except GameError as e:
                         self.__msgText.set(e)
-                        #self.__highlightedSqr = None
+                       
                         self.unhighlight()
+
             self.__handleAI()
                 
 
     def __handleAI(self):
         if self.__game.currentPlayer.isAI:
+            print("handle ai")
             output = self.__game.currentPlayer.findMove(self.__game)
-            self.__game.play(output[0]+1, output[1]+1, output[2]+1, output[3]+1)
+            self.__game.play(output[0], output[1], output[2], output[3])
             self.__updateBoard()
+            #self.updateScoreLabel()
             if self.__game.currentPlayer.isAI:
                 self.__handleAI()
 
