@@ -4,11 +4,12 @@ from random import *
 from clock import *
 from threading import *
 from time import *
+from tkinter import *
 from copy import deepcopy
 
 class Player:
-    def __init__(self, name, colour, direction) -> None:
-        self.__numPieces = 12 # left
+    def __init__(self, name, colour, direction, boardLen) -> None:
+        self.__numPieces = int((boardLen-2)*boardLen/4) # left
         self.__name = name
         self.__direction = direction # 1 is down - so player one
         self.__colour = colour
