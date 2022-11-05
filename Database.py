@@ -18,11 +18,21 @@ class dbInterface2:
         with self.dbConnnect(self.__dbName) as db:
             statement = f"SELECT * from Accounts WHERE username='{username}' AND password='{password1}'"
             db.execute(statement)
-            playerName = db.fetchall()
+            playerName = db.fetchall()[0]
             if not playerName:
                 return False
             self.__playerName = playerName
             return True
+
+    def updatePlayerPreferenceDict(self, dict):
+        dict = pickle.dumps(dict)
+        with self.dbConnnect(self.__dbName) as db:
+            db.execute(f"UPDATE PlayerInfo SET preferenceDict = ? WHERE username = ?", (dict, self.__playerName,))
+
+    def getPlayerPreferenceDict(self):
+        with self.dbConnnect(self.__dbName) as db:
+            db.execute(f"SELECT preferenceDict from PlayerInfo WHERE username = '{self.__playerName}'")
+            return pickle.loads(db.fetchall()[0][0])
 
     def getPlayerData(self):
         with self.dbConnnect(self.__dbName) as db:
@@ -32,20 +42,26 @@ class dbInterface2:
 
     def getPlayerSavedGame(self, savedGameID):
         with self.dbConnnect(self.__dbName) as db:
-            db.execute("SELECT savedGame from PlayerSavedGames WHERE username = ? AND savedGameID = ? ", (self.__playerName, savedGameID,))
-            game = db.fetchall()
-            return pickle.loads(game)
+            db.execute("SELECT savedGame, gamePreference from PlayerSavedGames WHERE username = ? and savedGameID = ? ", (str(self.__playerName), str(savedGameID),))
+            data = db.fetchall()
+            game, preference = pickle.loads(data[0][0]), pickle.loads(data[0][1])
+            return game, preference
+
+    def deletePlayerSavedGame(self, savedGameID):
+        with self.dbConnnect(self.__dbName) as db:
+            db.execute(f"DELETE from PlayerSavedGames WHERE savedGameID = '{savedGameID}'")
 
     def getAllPlayerSavedGameIDs(self):
         with self.dbConnnect(self.__dbName) as db:
-            db.execute("SELECT savedGameID from PlayerSavedGames WHERE username = ?", (self.__playerName,))
+            db.execute(f"SELECT savedGameID from PlayerSavedGames WHERE username = '{self.__playerName}'")
             IDs = db.fetchall()
-            return IDs
+            return list(map("".join, IDs)) # returns each as a tuple
 
-    def addSavedGame(self, game, savedGameID):
+    def addSavedGame(self, game, savedGameID, currentPreference):
         with self.dbConnnect(self.__dbName) as db:
             pickledGame = pickle.dumps(game)
-            db.execute("INSERT INTO PlayerSavedGames VALUES (?,?,?)", [savedGameID, self.__playerName, pickledGame])
+            pickledPreference = pickle.dumps(currentPreference)
+            db.execute("INSERT INTO PlayerSavedGames VALUES (?,?,?,?)", [savedGameID, self.__playerName, pickledGame, pickledPreference])
         
     
     def update(self, won): # can be implemented better
@@ -119,13 +135,7 @@ class game:
 
 """
 """
-g = game(Player("Yechan", "white", 1))
-a = dbInterface("example", Player("Yechan", "white", 1), g)
-print(a.getData())
-a.update()
-print(a.getData())
-a.update()
-print(a.getData())
+
 
 #a = dbInterface("database.db")
 #a.loginValid("MrYun", "123")
