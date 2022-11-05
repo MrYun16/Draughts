@@ -213,7 +213,7 @@ class Gui:
         loadGameWindow = Toplevel(self.__root)
         loadGameWindow.geometry("400x400")
         loadGameWindow.title("Saved Games")
-
+        print("also did")
         IDs = list(map("".join, self.__dbInterface.getAllPlayerSavedGameIDs())) # returns each as a tuple
         nameToID = {}
         for i, ID in enumerate(IDs):
