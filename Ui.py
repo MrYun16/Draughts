@@ -60,7 +60,8 @@ class Ui:
 class Gui:
     def __init__(self):
         root = Tk()
-        root.title("Tic Tac Toe")
+        root.title("Draughts")
+        root.geometry("200x400")
         frame = Frame(root)
         frame.pack()
         self.__root = root
@@ -69,7 +70,7 @@ class Gui:
         self.__login()
         self.__name = "MrYun" # string
         self.__loggedIn = True # needs to be False
-        self.__userPreferenceInfo = {"boardLen":8, "boardColour":"brown", "time":120}
+        self.__overallPreference = {"boardLen":8, "boardColour":"brown", "time":120}
 
         #Label(frame, textvariable=f"welcome {self.__name}").pack()
         menuHeader = StringVar()
@@ -138,7 +139,7 @@ class Gui:
             return
         AIwindow = Toplevel(self.__root)
         AIwindow.title("AI difficulty") # CHANGE HARD BACK TO RANDOM
-        boardLen = self.__userPreferenceInfo["boardLen"]
+        boardLen = self.__overallPreference["boardLen"]
         # NEEDS TO BE FIXED
         clickedEasy=lambda: self.__playWindow(Player(self.__name, "white", 1, boardLen), randomAI("Player2", "black", -1, boardLen), "Two Player")
         clickedHard=lambda: self.__playWindow(Player(self.__name, "white", 1, boardLen), hardAI("Player2", "black", -1, boardLen), "Two Player")
@@ -154,13 +155,14 @@ class Gui:
         self.__AImenu()
 
     def __twoPlayer(self):
+
         if self.__gameOnGoing or not self.__loggedIn:
             return
-        boardLen = self.__userPreferenceInfo["boardLen"]
+        boardLen = self.__overallPreference["boardLen"]
         player1 = Player(self.__name, "white", 1, boardLen)
         player2 = Player("Player2", "black", -1, boardLen)
         game = Game(player1, player2, boardLen)
-        self.__playWindow(player1, player2, game, "Two Player")
+        self.__playWindow(player1, player2, game, "Two Player", self.__overallPreference)
         self.__gameOnGoing = True
 
     def __statistics(self):
@@ -176,9 +178,10 @@ class Gui:
     def __settings(self):
         if self.__gameOnGoing or not self.__loggedIn:
             return
-
+        self.__overallPreference = self.__dbInterface.getPlayerPreferenceDict()
         def updatePreference(key, value):
-            self.__userPreferenceInfo[key] = value
+            self.__overallPreference[key] = value
+            self.__dbInterface.updatePlayerPreferenceDict(self.__overallPreference)
         
         settingsWindow = Toplevel(self.__root)
         settingsWindow.geometry("400x400")
@@ -187,21 +190,21 @@ class Gui:
         frame.pack()
 
         initialTime = IntVar()
-        initialTime.set(600)
+        initialTime.set(self.__overallPreference["time"])
         Label(frame, text="Select Time:").grid(row=3,column=1)
         timerMenu = OptionMenu(frame, initialTime, 60, 120, 600, 1200, -1, command= lambda e: updatePreference("time", initialTime.get()))
         timerMenu.config(width=20)
         timerMenu.grid(row=3,column=2)
 
         boardLen = IntVar()
-        boardLen.set(8)
+        boardLen.set(self.__overallPreference["boardLen"])
         Label(frame, text="Select board length:").grid(row=4,column=1)
         boardLenMenu = OptionMenu(frame, boardLen, 6, 8, command=lambda e: updatePreference("boardLen", boardLen.get()))
         boardLenMenu.config(width=20)
         boardLenMenu.grid(row=4,column=2,sticky="EW")
 
         boardColour = StringVar()
-        boardColour.set("brown")
+        boardColour.set(self.__overallPreference["boardColour"])
         Label(frame, text="Select board colour:").grid(row=5,column=1)
         boardMenu = OptionMenu(frame, boardColour, "blue", "brown", "green", "red", command=lambda e: updatePreference("boardColour", boardColour.get()))
         boardMenu.config(width=20)
@@ -213,8 +216,7 @@ class Gui:
         loadGameWindow = Toplevel(self.__root)
         loadGameWindow.geometry("400x400")
         loadGameWindow.title("Saved Games")
-        print("also did")
-        IDs = list(map("".join, self.__dbInterface.getAllPlayerSavedGameIDs())) # returns each as a tuple
+        IDs = self.__dbInterface.getAllPlayerSavedGameIDs()
         nameToID = {}
         for i, ID in enumerate(IDs):
             nameToID[i+1] = ID
@@ -237,25 +239,23 @@ class Gui:
 
    
     def loadGame(self, gameID, loadWin):
-        game = self.__dbInterface.getPlayerSavedGame(gameID)
+        game, preference = self.__dbInterface.getPlayerSavedGame(gameID)
         player1 = Player(self.__name, "white", 1, 8)
         player2 = Player("Player2", "black", -1, 8)
         loadWin.destroy()
         self.__dbInterface.deletePlayerSavedGame(gameID)
-        self.__playWindow(player1, player2, game, "Loaded Game")
+        self.__playWindow(player1, player2, game, "Loaded Game", preference)
 
         
 
-    def __playWindow(self, player1, player2, game, windowName): # AI plays downwards
+    def __playWindow(self, player1, player2, game, windowName, preference): # AI plays downwards
         self.__gameOnGoing = True
         self.player1 = player1
         self.player2 = player2
-        boardLen = self.__userPreferenceInfo["boardLen"]
+        boardLen = preference["boardLen"]
         self.__game = game # making game
         self.__highlightedSqr = None
-        self.__highlightedOriginalCol = None
-        
-        
+        self.__highlightedOriginalCol = None    
 
         gameWindow = Toplevel(self.__root)
         gameWindow.title(windowName)
@@ -283,8 +283,8 @@ class Gui:
             if (x+y)%2== 0:
                 sqrCol.set("white")
             else:
-                sqrCol.set(self.__userPreferenceInfo["boardColour"])
-            cmd = lambda r=y, c=x: self.__sqrClicked(c,r)
+                sqrCol.set(preference["boardColour"])
+            cmd = lambda r=y, c=x: self.__sqrClicked(c,r,preference)
             #create Font object
             myFont = font.Font(family='Helvetica', size=15)
             Button(
@@ -304,7 +304,7 @@ class Gui:
         Label(player2Frame, textvariable=self.numPieces2, font=("Times",24)).grid(row=0,column=1)
         
         timeString2 = StringVar()
-        #self.player2.createTimer(self.__userPreferenceInfo["time"], timeString2)
+        #self.player2.createTimer(preferenceInfo["time"], timeString2)
        # self.player2.startTimer()
         """
         for _ in range(10):
@@ -319,14 +319,18 @@ class Gui:
         Label(gameWindow, textvariable=self.__msgText).grid(row=3,column=0)
 
         dismissPressed=lambda: self.dismiss(gameWindow)
+        continuePressed=lambda : self.__saveGame(gameWindow)
+        undoPressed=lambda : self.__undo(preference)
 
         Button(gameWindow, text="Dismiss", command=dismissPressed).grid(row=4,column=2)
-        Button(gameWindow, text="Undo", command=self.__undo).grid(row=4,column=3)
-        Button(gameWindow, text="Continue for later", command=self.__saveGame).grid(row=4,column=1)
+        Button(gameWindow, text="Undo", command=undoPressed).grid(row=4,column=3)
+        Button(gameWindow, text="Continue for later", command=continuePressed).grid(row=4,column=1)
 
-    def __saveGame(self): # ADD GAME TO ARGUMENT later
+    def __saveGame(self, gameWin): # ADD GAME TO ARGUMENT later
         ID = datetime.datetime.now().strftime("%H:%M:%S")
-        self.__dbInterface.addSavedGame(self.__game, ID)
+        self.__dbInterface.addSavedGame(self.__game, ID, self.__overallPreference)
+        self.__gameOnGoing = False
+        gameWin.destroy()
 
         
 
@@ -352,17 +356,17 @@ class Gui:
         window.destroy()
     
 
-    def __undo(self):
+    def __undo(self, preference):
         try:
             self.__game.undo()
-            self.__updateBoard()
-            self.__handleAI()
+            self.__updateBoard(preference)
+            self.__handleAI(preference)
         except GameError as e:
             self.__msgText.set(e)
         
-    def __sqrClicked(self, x, y):
+    def __sqrClicked(self, x, y, preference):
         if not self.__game.currentPlayer.isAI: # accessing play via button only accessed by humans at their turn
-            self.__handleInput(x, y)
+            self.__handleInput(x, y, preference)
 
     def __handleIfWinner(self):
         self.__winner = self.__game.getWinner()
@@ -370,7 +374,7 @@ class Gui:
             self.__msgText.set(f"winner is {self.__winner.name}")
             self.__gameOnGoing = False
 
-    def __handleInput(self, x, y): # 0 indexed
+    def __handleInput(self, x, y, preference): # 0 indexed
         #self.__buttonColours[4][2].set("yellow")
         if self.__gameOnGoing: #while game ongoing
             x += 1
@@ -397,7 +401,7 @@ class Gui:
                         try:
                             self.__game.play(self.__highlightedSqr[1], self.__highlightedSqr[0], x, y)
                             self.__msgText.set("successful")
-                            self.__updateBoard()
+                            self.__updateBoard(preference)
                             self.unhighlight()
                             self.__handleIfWinner()
                           #  self.updateScoreLabel()
@@ -409,21 +413,21 @@ class Gui:
                        
                         self.unhighlight()
 
-            self.__handleAI()
+            self.__handleAI(preference)
                 
 
-    def __handleAI(self):
+    def __handleAI(self, preference):
         if self.__game.currentPlayer.isAI:
            
             output = self.__game.currentPlayer.findMove(self.__game)
             self.__game.play(output[0], output[1], output[2], output[3])
-            self.__updateBoard()
+            self.__updateBoard(preference)
             #self.updateScoreLabel()
             if self.__game.currentPlayer.isAI:
-                self.__handleAI()
+                self.__handleAI(preference)
 
-    def __updateBoard(self):
-        boardLen = self.__userPreferenceInfo["boardLen"]
+    def __updateBoard(self, preference):
+        boardLen = preference["boardLen"]
         for y, x in product(range(boardLen), range(boardLen)):
             self.__buttonSymbols[y][x].set(self.__game.at(x,y))
         self.numPieces1.set(self.player1.numPieces)
