@@ -4,6 +4,7 @@ from time import *
 import threading
 
 
+
 class Clock:
     def __init__(self, startTime, timeString, win) -> None: # startTime is in demiSeconds
         print("initialised")
@@ -16,12 +17,15 @@ class Clock:
     def start(self):
         self.decrement()
 
+
     def decrement(self):
+        if self.__currentTimeInDemiSec == 0:
+            raise Exception("im bad")
         if self.__notStopped:
             newTime = self.getTimeInString()
             self.__timeString.set(newTime)
             self.__currentTimeInDemiSec -= 1
-            self.__win.after(10, self.decrement())
+            self.__win.after(10, self.decrement)
 
     def stop(self):
         self.__notStopped = False
@@ -42,8 +46,8 @@ class Clock:
             centiSec = str(self.__currentTimeInDemiSec%100)
             if len(centiSec) == 1:
                 centiSec="0"+centiSec
-            return ":".join(hrs, mins, sec, centiSec)
-        return ":".join(hrs, mins, sec)
+            return ":".join([hrs, mins, sec, centiSec])
+        return ":".join([hrs, mins, sec])
         
 
 

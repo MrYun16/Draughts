@@ -5,12 +5,12 @@ from tkinter import *
 from Player import Player, randomAI, hardAI
 from itertools import product
 from Database import dbInterface2
-from tkmacosx import ColorVar
-from clock import Timer
+from clock import Clock
 import time
 import tkinter.font as font
 import pickle
 import datetime
+from tkmacosx import ColorVar
 
 
 
@@ -108,6 +108,8 @@ class Gui:
             command=self.__loadGame
         ).pack(fill=X)
 
+        
+
         Button(
             frame,
             text="Quit",
@@ -138,12 +140,12 @@ class Gui:
         if self.__gameOnGoing:
             return
         AIwindow = Toplevel(self.__root)
-        AIwindow.title("AI difficulty") # CHANGE HARD BACK TO RANDOM
+        AIwindow.title("AI difficulty")
         boardLen = self.__overallPreference["boardLen"]
         # NEEDS TO BE FIXED
-        clickedEasy=lambda: self.__playWindow(Player(self.__name, "white", 1, boardLen), randomAI("Player2", "black", -1, boardLen), "Two Player")
-        clickedHard=lambda: self.__playWindow(Player(self.__name, "white", 1, boardLen), hardAI("Player2", "black", -1, boardLen), "Two Player")
-
+        player1 = Player(self.__name, "white", 1, boardLen)
+        clickedEasy=lambda player2=randomAI("Player2","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy")
+        clickedHard=lambda player2=hardAI("Player2","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Hard")
         lvlsFrame = Frame(AIwindow)
         Button(lvlsFrame, text="Easy", command = clickedEasy, pady=20).grid(row=0,column=0)
         Button(lvlsFrame, text="Hard", command = clickedHard, pady=20).grid(row=1,column=0)
@@ -175,7 +177,9 @@ class Gui:
         Label(frame, text=self.player1.name).grid(row=0,column=0)
 
 
+
     def __settings(self):
+
         if self.__gameOnGoing or not self.__loggedIn:
             return
         self.__overallPreference = self.__dbInterface.getPlayerPreferenceDict()
@@ -263,7 +267,15 @@ class Gui:
         player1Frame = Frame(gameWindow)
         self.numPieces1 = StringVar()
         self.numPieces1.set(self.player1.numPieces)
-    
+        
+        self.clockDisplay1 = StringVar()
+        self.player1Clock = Label(player1Frame, textvariable=self.clockDisplay1, font=("Times",24))
+        self.player1Clock.grid(row=0, column=2)
+        playerClock = Clock(300, self.clockDisplay1, self.__root)
+        try:
+            playerClock.start()
+        except:
+            print("it ended")
 
         Label(player1Frame, text=self.player1.name, font=("Times",24)).grid(row=0, column=0)
         Label(player1Frame, textvariable=self.numPieces1, font=("Times",24)).grid(row=0, column=1)
@@ -302,15 +314,8 @@ class Gui:
         self.numPieces2.set(self.player2.numPieces)
         Label(player2Frame, text=self.player2.name, font=("Times",24)).grid(row=0,column=0)
         Label(player2Frame, textvariable=self.numPieces2, font=("Times",24)).grid(row=0,column=1)
-        
         timeString2 = StringVar()
-        #self.player2.createTimer(preferenceInfo["time"], timeString2)
-       # self.player2.startTimer()
-        """
-        for _ in range(10):
-            print("in gui", timeString2.get())
-            time.sleep(2)
-        """
+ 
         Label(player2Frame, text=timeString2.get(), font=("Times",24)).grid(row=0,column=1, sticky="E")
         player2Frame.grid(row=2,column=0, sticky="W")
 
@@ -354,7 +359,6 @@ class Gui:
     def dismiss(self, window):
         self.__gameOnGoing = False
         window.destroy()
-    
 
     def __undo(self, preference):
         try:
@@ -387,14 +391,12 @@ class Gui:
                     self.__highlight(x,y)
                 except GameError as e:
                     self.__msgText.set(e)
-                    
             else: #already picked first square
                 if x == self.__highlightedSqr[1] and y == self.__highlightedSqr[0]:
                     self.__msgText.set(f"highlighted square cancelled")
                   #  self.__buttons[self.__highlightedSqr[1]][self.__highlightedSqr[0]].bg ==self.__highlightedSqr[2]
                     #self.__highlightedSqr = None
                     self.unhighlight()
-
                 else:
                     try:
                         self.__game.checkIsVacant(x, y)
@@ -412,9 +414,7 @@ class Gui:
                         self.__msgText.set(e)
                        
                         self.unhighlight()
-
             self.__handleAI(preference)
-                
 
     def __handleAI(self, preference):
         if self.__game.currentPlayer.isAI:
