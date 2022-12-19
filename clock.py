@@ -6,36 +6,34 @@ import threading
 
 
 class Clock:
-    def __init__(self, startTime, timeString, win) -> None: # startTime is in demiSeconds
-        print("initialised")
-        self.__timeString = timeString # timeString in StringVar()
-        self.__timeString.set(startTime)
+    def __init__(self, startTime, timeString, timeStillLeft, win) -> None: # startTime is in demiSeconds
         self.__currentTimeInDemiSec = startTime
+        self.__timeString = timeString # timeString in StringVar()
+        self.__timeString.set(self.__getTimeInString())
+        self.__started = False
         self.__win = win
-        self.__notStopped = True
+        self.__timeStillLeft = timeStillLeft
 
     def start(self):
-        self.decrement()
+        self.__started = True
+        self.__decrement()
 
-
-    def decrement(self):
-        if self.__currentTimeInDemiSec == 0:
-            raise Exception("im bad")
-        if self.__notStopped:
-            newTime = self.getTimeInString()
+    def __decrement(self):
+        if self.__currentTimeInDemiSec == -1:
+            self.__timeStillLeft.set(False)
+        if self.__timeStillLeft.get() and self.__started:
+            newTime = self.__getTimeInString()
             self.__timeString.set(newTime)
             self.__currentTimeInDemiSec -= 1
-            self.__win.after(10, self.decrement)
+            self.__win.after(10, self.__decrement)
 
     def stop(self):
-        self.__notStopped = False
+        self.__started = False
 
-    
-
-    def getTimeInString(self): #time is in centi seconds
-        hrs = str(self.__currentTimeInDemiSec//360000)
-        mins = str((self.__currentTimeInDemiSec%360000)//6000)
-        sec = str((self.__currentTimeInDemiSec%6000)//100)
+    def __getTimeInString(self): #time is in demi seconds
+        hrs = str(self.__currentTimeInDemiSec//36000)
+        mins = str((self.__currentTimeInDemiSec%36000)//600)
+        sec = str((self.__currentTimeInDemiSec%600)//60)
         if len(hrs) == 1:
             hrs="0"+hrs
         if len(mins) == 1:
@@ -43,13 +41,11 @@ class Clock:
         if len(sec) == 1:
             sec="0"+sec
         if self.__currentTimeInDemiSec <= 1500:
-            centiSec = str(self.__currentTimeInDemiSec%100)
+            centiSec = str(self.__currentTimeInDemiSec%60)
             if len(centiSec) == 1:
                 centiSec="0"+centiSec
             return ":".join([hrs, mins, sec, centiSec])
         return ":".join([hrs, mins, sec])
-        
-
 
 """
     def getTimeInDemiSec(timeString):

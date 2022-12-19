@@ -12,7 +12,6 @@ class Game:
         self.__currentPlayer = self.__player1
         self.__jumpingPiece = None # piece that must keeping jumping if possible
         self.__board = [[self.EMPTY for _ in range(self.boardLen)] for _ in range(self.boardLen)]
-        
         self.__boardHistory = []
         self.__piecesHistory = [] # contains [player1.numpieces, player2.numpieces]
         self.__currentPlayerHistory = [] # uses player's direction
@@ -21,6 +20,10 @@ class Game:
         #self.__justUndoed = False
         self.prepareBoard()
         self.updateHistory()
+
+    
+    def boardHistoryLen(self):
+        return len(self.__boardHistory)
 
     @property
     def boardLen(self):
@@ -53,11 +56,7 @@ class Game:
     def board(self):
         return self.__board
 
-    def undo(self): # needs to be finished
-        #print(f"before: {self.__currentPlayerHistory}")
-        
-        #if self.__justUndoed:
-        #    raise GameError("Already undoed")
+    def undo(self):
         if len(self.__piecesHistory) == 1:
             raise GameError("Nothing to undo")
 
@@ -72,16 +71,12 @@ class Game:
         self.__player2.amendNumPieces(self.__piecesHistory[-1][1])
         self.__jumpingPiece = self.__jumpingPieceHistory[-1]
         self.__currentPlayer = self.__player1 if self.__currentPlayerHistory[-1] == 1 else self.__player2
-    
-        #print(f"after: {self.__currentPlayerHistory}, current player: {self.__currentPlayer.direction}")    
 
     def updateHistory(self):
         self.__boardHistory.append(deepcopy(self.__board))
         self.__piecesHistory.append([self.__player1.numPieces, self.__player2.numPieces])
         self.__jumpingPieceHistory.append(self.__jumpingPiece)
         self.__currentPlayerHistory.append(1 if self.__currentPlayer.colour == self.__player1.colour else -1)
-        self.__justUndoed = False
-     
         
     def checkIsOwnPiece(self, x, y): # accounts for empty sqr, 1 indexed
         x -= 1
@@ -206,8 +201,12 @@ class Game:
 
     def switchTurn(self):
         if self.__currentPlayer == self.__player1:
+            self.__player1.clock.stop()
+            self.__player2.clock.start()
             self.__currentPlayer = self.__player2
         else:
+            self.__player2.clock.stop()
+            self.__player1.clock.start()
             self.__currentPlayer = self.__player1
 
     def getWinner(self):
