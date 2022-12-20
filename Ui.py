@@ -1,6 +1,6 @@
 from msilib.schema import Font
 from turtle import width
-from Game import GameError, Game
+from Game import GameError, Game, TimeError
 from tkinter import *
 from Player import Player, randomAI, hardAI
 from itertools import product
@@ -162,10 +162,9 @@ class Gui:
         player1 = Player(self.__name, "white", 1, boardLen)
         player2 = Player("Player2", "black", -1, boardLen)
       
-        self.timeStillLeft = BooleanVar()
-        self.timeStillLeft.set(True)
-        player1.createClock(self.__overallPreference["time"], self.timeStillLeft, self.__root)
-        player2.createClock(self.__overallPreference["time"], self.timeStillLeft, self.__root)
+
+        player1.createClock(self.__overallPreference["time"], self.__root)
+        player2.createClock(self.__overallPreference["time"], self.__root)
         
         game = Game(player1, player2, boardLen)
         self.__playWindow(player1, player2, game, "Two Player", self.__overallPreference)
@@ -178,7 +177,7 @@ class Gui:
         statsWindow.title("Statistics")
 
         frame = Frame(statsWindow)
-        Label(frame, text=self.player1.name).grid(row=0,column=0)
+        Label(frame, text=self.__player1.name).grid(row=0,column=0)
 
 
 
@@ -256,8 +255,8 @@ class Gui:
         
     def __playWindow(self, player1, player2, game, windowName, preference): # AI plays downwards
         self.__gameOnGoing = True
-        self.player1 = player1
-        self.player2 = player2
+        self.__player1 = player1
+        self.__player2 = player2
         boardLen = preference["boardLen"]
         self.__game = game # making game
         self.__highlightedSqr = None
@@ -268,21 +267,16 @@ class Gui:
 
         player1Frame = Frame(gameWindow)
         self.numPieces1 = StringVar()
-        self.numPieces1.set(self.player1.numPieces)
-        
-        self.timeStillLeft = BooleanVar()
-        self.timeStillLeft.set(True)
+        self.numPieces1.set(self.__player1.numPieces)
 
-        def timeStillLeftIsChanged(a,b,c):
-            pass
-
-        self.timeStillLeft.trace("w", timeStillLeftIsChanged)
-        Label(player1Frame, textvariable=self.player1.clockDisplayString, font=("Times",24)).grid(row=0, column=2)
-        #self.player1Clock = Clock(self.__overallPreference["time"], self.clockDisplay1, self.timeStillLeft, self.__root)
+        self.__player1.clock.timeLeft.trace("w", self.__handleIfWinner)
+        self.__player2.clock.timeLeft.trace("w", self.__handleIfWinner)
+        Label(player1Frame, textvariable=self.__player1.clockDisplayString, font=("Times",24)).grid(row=0, column=2)
+        #self.__player1Clock = Clock(self.__overallPreference["time"], self.clockDisplay1, self.timeLeft, self.__root)
         
         
 
-        Label(player1Frame, text=self.player1.name, font=("Times",24)).grid(row=0, column=0)
+        Label(player1Frame, text=self.__player1.name, font=("Times",24)).grid(row=0, column=0)
         Label(player1Frame, textvariable=self.numPieces1, font=("Times",24)).grid(row=0, column=1)
         player1Frame.grid(row=0,column=0, sticky="W")
 
@@ -316,12 +310,12 @@ class Gui:
         
         player2Frame = Frame(gameWindow)
         self.numPieces2 = StringVar()
-        self.numPieces2.set(self.player2.numPieces)
-        Label(player2Frame, text=self.player2.name, font=("Times",24)).grid(row=0,column=0)
+        self.numPieces2.set(self.__player2.numPieces)
+        Label(player2Frame, text=self.__player2.name, font=("Times",24)).grid(row=0,column=0)
         Label(player2Frame, textvariable=self.numPieces2, font=("Times",24)).grid(row=0,column=1)
         player2Frame.grid(row=2,column=0, sticky="W")
 
-        Label(player2Frame, textvariable=self.player2.clockDisplayString, font=("Times",24)).grid(row=0, column=2, sticky="E")
+        Label(player2Frame, textvariable=self.__player2.clockDisplayString, font=("Times",24)).grid(row=0, column=2, sticky="E")
         
         self.__msgText = StringVar()
         self.__msgText.set("")
@@ -342,8 +336,8 @@ class Gui:
         gameWin.destroy()
 
     def updateScoreLabel(self):
-        self.numPieces2.set(self.player2.numPieces)
-        self.numPieces1.set(self.player1.numPieces)
+        self.numPieces2.set(self.__player2.numPieces)
+        self.numPieces1.set(self.__player1.numPieces)
         print(self.numPieces2.get(), self.numPieces1.get())
 
     def __highlight(self, col, row):
@@ -374,17 +368,23 @@ class Gui:
         if not self.__game.currentPlayer.isAI: # accessing play via button only accessed by humans at their turn
             self.__handleInput(x, y, preference)
 
-    def __handleIfWinner(self):
+    def __handleIfWinner(self, *args):
         self.__winner = self.__game.getWinner()
         if self.__winner:
             self.__msgText.set(f"winner is {self.__winner.name}")
+            self.__gameOnGoing = False
+        if self.__player1.clock.timeLeft.get() and not self.__player2.clock.timeLeft.get():
+            self.__msgText.set(f"winner is {self.__player1.name}")
+            self.__gameOnGoing = False
+        elif self.__player2.clock.timeLeft.get() and not self.__player1.clock.timeLeft.get():
+            self.__msgText.set(f"winner is {self.__player2.name}")
             self.__gameOnGoing = False
 
     def __handleInput(self, x, y, preference): # inputs 0 indexed
         if self.__gameOnGoing: #while game ongoing
             
            # if self.__game.boardHistoryLen() == 1:
-            #    self.player1Clock.start()
+            #    self.__player1Clock.start()
             x += 1
             y += 1
             if self.__highlightedSqr == None: #hasn't picked first square
@@ -408,13 +408,20 @@ class Gui:
                             self.__updateBoard(preference)
                             self.unhighlight()
                             self.__handleIfWinner()
+                            #self.switchTimers()
                         except GameError as e:
                             self.__msgText.set(e)
                             self.unhighlight()
+                        except TimeError as e:
+                            self.__msgText.set(e)
                     except GameError as e:
                         self.__msgText.set(e)
                         self.unhighlight()
             self.__handleAI(preference)
+
+    def switchTimers(self): # this is called after play occurs
+        self.__game.currentPlayer().clock.start()
+        self.__game.nonCurrentPlayer().clock.stop()
 
     def __handleAI(self, preference):
         if self.__game.currentPlayer.isAI:
@@ -428,8 +435,8 @@ class Gui:
         boardLen = preference["boardLen"]
         for y, x in product(range(boardLen), range(boardLen)):
             self.__buttonSymbols[y][x].set(self.__game.at(x,y))
-        self.numPieces1.set(self.player1.numPieces)
-        self.numPieces2.set(self.player2.numPieces)
+        self.numPieces1.set(self.__player1.numPieces)
+        self.numPieces2.set(self.__player2.numPieces)
 
 
     def __quit(self):
