@@ -59,16 +59,16 @@ class Clock:
             self.__started = False
 
     def __getTimeInString(self): #time is in demi seconds
-        hrs = str(self.__currentTimeInDemiSec//36000)
-        mins = str((self.__currentTimeInDemiSec%36000)//600)
-        sec = str((self.__currentTimeInDemiSec%600)//60)
+        hrs = str(self.__currentTimeInDemiSec//216000)
+        mins = str((self.__currentTimeInDemiSec%216000)//3600)
+        sec = str((self.__currentTimeInDemiSec%3600)//60)
         if len(hrs) == 1:
             hrs="0"+hrs
         if len(mins) == 1:
             mins="0"+mins
         if len(sec) == 1:
             sec="0"+sec
-        if self.__currentTimeInDemiSec <= 1500:
+        if self.__currentTimeInDemiSec <= 900:
             centiSec = str(self.__currentTimeInDemiSec%60)
             if len(centiSec) == 1:
                 centiSec="0"+centiSec
