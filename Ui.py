@@ -161,10 +161,12 @@ class Gui:
         boardLen = self.__overallPreference["boardLen"]
         player1 = Player(self.__name, "white", 1, boardLen)
         player2 = Player("Player2", "black", -1, boardLen)
-      
 
-        player1.createClock(self.__overallPreference["time"], self.__root)
-        player2.createClock(self.__overallPreference["time"], self.__root)
+        clockDisplayString1 = StringVar()
+        clockDisplayString2 = StringVar()
+
+        player1.createClock(self.__overallPreference["time"], clockDisplayString1, self.__root)
+        player2.createClock(self.__overallPreference["time"], clockDisplayString2, self.__root)
         
         game = Game(player1, player2, boardLen)
         self.__playWindow(player1, player2, game, "Two Player", self.__overallPreference)
@@ -245,11 +247,19 @@ class Gui:
 
    
     def loadGame(self, gameID, loadWin):
-        game, preference = self.__dbInterface.getPlayerSavedGame(gameID)
-        player1 = Player(self.__name, "white", 1, 8)
-        player2 = Player("Player2", "black", -1, 8)
+        player1, player2, game, preference = self.__dbInterface.getPlayerSavedGame(gameID)
         loadWin.destroy()
         self.__dbInterface.deletePlayerSavedGame(gameID)
+
+        clockDisplayString1 = StringVar()
+        clockDisplayString2 = StringVar()
+
+        player1.createClock(player1.timeBeforeSaved, clockDisplayString1, self.__root)
+        player2.createClock(player2.timeBeforeSaved, clockDisplayString2, self.__root)
+
+        game.updatePlayer1(player1)
+        game.updatePlayer2(player2)
+
         self.__playWindow(player1, player2, game, "Loaded Game", preference)
 
         
@@ -271,9 +281,7 @@ class Gui:
 
         self.__player1.clock.timeLeft.trace("w", self.__handleIfWinner)
         self.__player2.clock.timeLeft.trace("w", self.__handleIfWinner)
-        Label(player1Frame, textvariable=self.__player1.clockDisplayString, font=("Times",24)).grid(row=0, column=2)
-        #self.__player1Clock = Clock(self.__overallPreference["time"], self.clockDisplay1, self.timeLeft, self.__root)
-        
+        Label(player1Frame, textvariable=self.__player1.clock.clockDisplayString, font=("Times",24)).grid(row=0, column=2)
         
 
         Label(player1Frame, text=self.__player1.name, font=("Times",24)).grid(row=0, column=0)
@@ -315,7 +323,7 @@ class Gui:
         Label(player2Frame, textvariable=self.numPieces2, font=("Times",24)).grid(row=0,column=1)
         player2Frame.grid(row=2,column=0, sticky="W")
 
-        Label(player2Frame, textvariable=self.__player2.clockDisplayString, font=("Times",24)).grid(row=0, column=2, sticky="E")
+        Label(player2Frame, textvariable=self.__player2.clock.clockDisplayString, font=("Times",24)).grid(row=0, column=2, sticky="E")
         
         self.__msgText = StringVar()
         self.__msgText.set("")
@@ -330,10 +338,16 @@ class Gui:
         Button(gameWindow, text="Continue for later", command=continuePressed).grid(row=4,column=1)
 
     def __saveGame(self, gameWin): # ADD GAME TO ARGUMENT later
-        ID = datetime.datetime.now().strftime("%H:%M:%S")
-        self.__dbInterface.addSavedGame(self.__game, ID, self.__overallPreference)
-        self.__gameOnGoing = False
-        gameWin.destroy()
+        if self.__gameOnGoing:
+            self.__player1.deleteClock() # clock contains tkinter, tkinter cannot be pickled
+            self.__player2.deleteClock()
+
+            ID = datetime.datetime.now().strftime("%H:%M:%S")
+
+            self.__dbInterface.addSavedGame(self.__player1, self.__player2, self.__game, ID, self.__overallPreference)
+            self.__gameOnGoing = False
+            gameWin.destroy()
+        
 
     def updateScoreLabel(self):
         self.numPieces2.set(self.__player2.numPieces)
@@ -373,13 +387,15 @@ class Gui:
         if self.__winner:
             self.__msgText.set(f"winner is {self.__winner.name}")
             self.__gameOnGoing = False
-        if self.__player1.clock.timeLeft.get() and not self.__player2.clock.timeLeft.get():
-            self.__msgText.set(f"winner is {self.__player1.name}")
-            self.__gameOnGoing = False
-        elif self.__player2.clock.timeLeft.get() and not self.__player1.clock.timeLeft.get():
-            self.__msgText.set(f"winner is {self.__player2.name}")
-            self.__gameOnGoing = False
-
+        try:
+            if self.__player1.clock.timeLeft.get() and not self.__player2.clock.timeLeft.get():
+                self.__msgText.set(f"winner is {self.__player1.name}")
+                self.__gameOnGoing = False
+            elif self.__player2.clock.timeLeft.get() and not self.__player1.clock.timeLeft.get():
+                self.__msgText.set(f"winner is {self.__player2.name}")
+                self.__gameOnGoing = False
+        except:
+            pass
     def __handleInput(self, x, y, preference): # inputs 0 indexed
         if self.__gameOnGoing: #while game ongoing
             

@@ -6,14 +6,30 @@ import threading
 
 
 class Clock:
-    def __init__(self, startTime, timeString, win) -> None: # startTime is in demiSeconds
-        self.__currentTimeInDemiSec = startTime
-        self.__timeString = timeString # timeString in StringVar()
-        self.__timeString.set(self.__getTimeInString())
-        self.__started = False
-        self.__win = win
-        self.__timeLeft = BooleanVar()
-        self.__timeLeft.set(True)
+    def __init__(self, startTime, clockDisplayString, win) -> None: # startTime is in demiSeconds
+        if startTime == -1:
+            self.__clockDisplayString = clockDisplayString
+            self.__clockDisplayString.set("           ")
+            self.__beingUsed = False # user has decided to turn on/off timers in settings
+            self.__timeLeft = BooleanVar()
+            self.__timeLeft.set(True)
+        else:
+            self.__currentTimeInDemiSec = startTime
+            self.__clockDisplayString = clockDisplayString # clockDisplayString in StringVar()
+            self.__clockDisplayString.set(self.__getTimeInString())
+            self.__started = False
+            self.__win = win
+            self.__timeLeft = BooleanVar()
+            self.__timeLeft.set(True)
+            self.__beingUsed = True
+
+    @property
+    def clockDisplayString(self):
+        return self.__clockDisplayString
+
+    @property
+    def currentTimeInDemiSec(self):
+        return self.__currentTimeInDemiSec
 
     @property
     def started(self):
@@ -24,9 +40,9 @@ class Clock:
         return self.__timeLeft
 
     def start(self):
-        self.__started = True
-        self.__decrement()
-
+        if self.__beingUsed:
+            self.__started = True
+            self.__decrement()
 
     def __decrement(self):
         if self.__currentTimeInDemiSec == -1:
@@ -34,13 +50,13 @@ class Clock:
             return
         if self.__started:
             newTime = self.__getTimeInString()
-            self.__timeString.set(newTime)
+            self.__clockDisplayString.set(newTime)
             self.__currentTimeInDemiSec -= 1
             self.__win.after(10, self.__decrement)
 
-
     def stop(self):
-        self.__started = False
+        if self.__beingUsed:
+            self.__started = False
 
     def __getTimeInString(self): #time is in demi seconds
         hrs = str(self.__currentTimeInDemiSec//36000)
