@@ -56,6 +56,11 @@ class Ui:
                     print(e)
 
 class Gui:
+    TIME = "time"
+    BOARDLEN = "boardLen"
+    BOARDCOLOUR = "boardColour"
+
+
     def __init__(self):
         root = Tk()
         root.title("Draughts")
@@ -68,7 +73,7 @@ class Gui:
         self.__login()
         self.__name = "MrYun" # string
         self.__loggedIn = True # needs to be False
-        self.__overallPreference = {"boardLen":8, "boardColour":"brown", "time":120}
+        self.__overallPreference = {self.BOARDLEN:8, self.BOARDCOLOUR:"brown", self.TIME:3600}
 
         #Label(frame, textvariable=f"welcome {self.__name}").pack()
         menuHeader = StringVar()
@@ -139,7 +144,7 @@ class Gui:
             return
         AIwindow = Toplevel(self.__root)
         AIwindow.title("AI difficulty")
-        boardLen = self.__overallPreference["boardLen"]
+        boardLen = self.__overallPreference[self.BOARDLEN]
         # NEEDS TO BE FIXED
         player1 = Player(self.__name, "white", 1, boardLen)
         clickedEasy=lambda player2=randomAI("Player2","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy")
@@ -158,15 +163,15 @@ class Gui:
 
         if self.__gameOnGoing or not self.__loggedIn:
             return
-        boardLen = self.__overallPreference["boardLen"]
+        boardLen = self.__overallPreference[self.BOARDLEN]
         player1 = Player(self.__name, "white", 1, boardLen)
         player2 = Player("Player2", "black", -1, boardLen)
 
         clockDisplayString1 = StringVar()
         clockDisplayString2 = StringVar()
 
-        player1.createClock(self.__overallPreference["time"], clockDisplayString1, self.__root)
-        player2.createClock(self.__overallPreference["time"], clockDisplayString2, self.__root)
+        player1.createClock(self.__overallPreference[self.TIME], clockDisplayString1, self.__root)
+        player2.createClock(self.__overallPreference[self.TIME], clockDisplayString2, self.__root)
         
         game = Game(player1, player2, boardLen)
         self.__playWindow(player1, player2, game, "Two Player", self.__overallPreference)
@@ -188,6 +193,9 @@ class Gui:
         if self.__gameOnGoing or not self.__loggedIn:
             return
         self.__overallPreference = self.__dbInterface.getPlayerPreferenceDict()
+        if self.__overallPreference is None:
+            self.__overallPreference = {self.BOARDLEN:8, self.BOARDCOLOUR:"brown", self.TIME:3600}
+
         def updatePreference(key, value):
             self.__overallPreference[key] = value
             self.__dbInterface.updatePlayerPreferenceDict(self.__overallPreference)
@@ -199,23 +207,40 @@ class Gui:
         frame.pack()
 
         initialTime = IntVar()
-        initialTime.set(self.__overallPreference["time"])
+        initialTime.set(self.__overallPreference[self.TIME])
         Label(frame, text="Select Time:").grid(row=3,column=1)
-        timerMenu = OptionMenu(frame, initialTime, 60, 120, 600, 1200, -1, command= lambda e: updatePreference("time", initialTime.get()))
+        timeInWordsToDemi = {
+            "1min":3600,
+            "3mins":10800,
+            "5mins":18000,
+            "10mins":36000,
+            "30mins":108000,
+            "1hr":216000,
+            "1hr30mins":324000,
+            "none":-1
+        }
+        timeInWords = StringVar()
+        for word, demi in timeInWordsToDemi.items():
+            if demi == self.__overallPreference[self.TIME]:
+                timeInWords.set(word)
+                print("done")
+                break
+
+        timerMenu = OptionMenu(frame, timeInWords, "1min", "3mins", "5mins", "10mins", "30mins", "1hr", "1hr30mins", "none", command= lambda e: updatePreference(self.TIME, timeInWordsToDemi[timeInWords.get()]))
         timerMenu.config(width=20)
         timerMenu.grid(row=3,column=2)
 
         boardLen = IntVar()
-        boardLen.set(self.__overallPreference["boardLen"])
+        boardLen.set(self.__overallPreference[self.BOARDLEN])
         Label(frame, text="Select board length:").grid(row=4,column=1)
-        boardLenMenu = OptionMenu(frame, boardLen, 6, 8, command=lambda e: updatePreference("boardLen", boardLen.get()))
+        boardLenMenu = OptionMenu(frame, boardLen, 6, 8, command=lambda e: updatePreference(self.BOARDLEN, boardLen.get()))
         boardLenMenu.config(width=20)
         boardLenMenu.grid(row=4,column=2,sticky="EW")
 
         boardColour = StringVar()
-        boardColour.set(self.__overallPreference["boardColour"])
+        boardColour.set(self.__overallPreference[self.BOARDCOLOUR])
         Label(frame, text="Select board colour:").grid(row=5,column=1)
-        boardMenu = OptionMenu(frame, boardColour, "blue", "brown", "green", "red", command=lambda e: updatePreference("boardColour", boardColour.get()))
+        boardMenu = OptionMenu(frame, boardColour, "blue", "brown", "green", "red", command=lambda e: updatePreference(self.BOARDCOLOUR, boardColour.get()))
         boardMenu.config(width=20)
         boardMenu.grid(row=5,column=2,sticky="EW")
     
@@ -267,7 +292,7 @@ class Gui:
         self.__gameOnGoing = True
         self.__player1 = player1
         self.__player2 = player2
-        boardLen = preference["boardLen"]
+        boardLen = preference[self.BOARDLEN]
         self.__game = game # making game
         self.__highlightedSqr = None
         self.__highlightedOriginalCol = None    
@@ -302,7 +327,7 @@ class Gui:
             if (x+y)%2== 0:
                 sqrCol.set("white")
             else:
-                sqrCol.set(preference["boardColour"])
+                sqrCol.set(preference[self.BOARDCOLOUR])
             cmd = lambda r=y, c=x: self.__sqrClicked(c,r,preference)
             #create Font object
             myFont = font.Font(family='Helvetica', size=15)
@@ -448,7 +473,7 @@ class Gui:
                 self.__handleAI(preference)
 
     def __updateBoard(self, preference):
-        boardLen = preference["boardLen"]
+        boardLen = preference[self.BOARDLEN]
         for y, x in product(range(boardLen), range(boardLen)):
             self.__buttonSymbols[y][x].set(self.__game.at(x,y))
         self.numPieces1.set(self.__player1.numPieces)
