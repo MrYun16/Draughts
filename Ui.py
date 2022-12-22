@@ -427,6 +427,19 @@ class Gui:
                 self.__gameOnGoing = False
         except:
             pass
+
+        if not self.__gameOnGoing: # i.e. is winner
+            if self.__player2.isAI:
+                if self.__winner == self.__player1:
+                    self.__dbInterface.updateAIstats(True)
+                else:
+                    self.__dbInterface.updateAIstats(False)
+            else:
+                if self.__winner == self.__player1:
+                    self.__dbInterface.updateHumanStats(True)
+                else:
+                    self.__dbInterface.updateHumanStats(False)
+
     def __handleInput(self, x, y, preference): # inputs 0 indexed
         if self.__gameOnGoing: #while game ongoing
             
