@@ -142,17 +142,21 @@ class Gui:
     def __AImenu(self):
         if self.__gameOnGoing:
             return
+
+        newOverallPreference = self.__overallPreference.copy()
+        newOverallPreference[self.TIME] = -1 # no time allowed for AI
         AIwindow = Toplevel(self.__root)
         AIwindow.title("AI difficulty")
         boardLen = self.__overallPreference[self.BOARDLEN]
-        # NEEDS TO BE FIXED
         player1 = Player(self.__name, "white", 1, boardLen)
-        clickedEasy=lambda player2=randomAI("Player2","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy")
-        clickedHard=lambda player2=hardAI("Player2","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Hard")
+        clickedEasy=lambda player2=randomAI("EASY AI","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy", newOverallPreference)
+        clickedHard=lambda player2=hardAI("HARD AI","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Hard", newOverallPreference)
         lvlsFrame = Frame(AIwindow)
         Button(lvlsFrame, text="Easy", command = clickedEasy, pady=20).grid(row=0,column=0)
         Button(lvlsFrame, text="Hard", command = clickedHard, pady=20).grid(row=1,column=0)
         lvlsFrame.pack()
+
+        #player1, player2, game, windowName, preference
     
     def __onePlayer(self):
         if self.__gameOnGoing or not self.__loggedIn:
@@ -167,12 +171,6 @@ class Gui:
         player1 = Player(self.__name, "white", 1, boardLen)
         player2 = Player("Player2", "black", -1, boardLen)
 
-        clockDisplayString1 = StringVar()
-        clockDisplayString2 = StringVar()
-
-        player1.createClock(self.__overallPreference[self.TIME], clockDisplayString1, self.__root)
-        player2.createClock(self.__overallPreference[self.TIME], clockDisplayString2, self.__root)
-        
         game = Game(player1, player2, boardLen)
         self.__playWindow(player1, player2, game, "Two Player", self.__overallPreference)
         self.__gameOnGoing = True
@@ -304,6 +302,12 @@ class Gui:
         self.numPieces1 = StringVar()
         self.numPieces1.set(self.__player1.numPieces)
 
+        clockDisplayString1 = StringVar()
+        clockDisplayString2 = StringVar()
+
+        player1.createClock(preference[self.TIME], clockDisplayString1, self.__root)
+        player2.createClock(preference[self.TIME], clockDisplayString2, self.__root)
+
         self.__player1.clock.timeLeft.trace("w", self.__handleIfWinner)
         self.__player2.clock.timeLeft.trace("w", self.__handleIfWinner)
         Label(player1Frame, textvariable=self.__player1.clock.clockDisplayString, font=("Times",24)).grid(row=0, column=2)
@@ -412,6 +416,8 @@ class Gui:
         if self.__winner:
             self.__msgText.set(f"winner is {self.__winner.name}")
             self.__gameOnGoing = False
+            self.__player1.clock.stop()
+            self.__player2.clock.stop()
         try:
             if self.__player1.clock.timeLeft.get() and not self.__player2.clock.timeLeft.get():
                 self.__msgText.set(f"winner is {self.__player1.name}")
