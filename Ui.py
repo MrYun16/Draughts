@@ -71,15 +71,15 @@ class Gui:
         self.__gameOnGoing = False
         self.__dbInterface = dbInterface2("database.db", "MrYun")
         self.__login()
-        self.__name = "MrYun" # string
+        self.__username = "MrYun" # string
         self.__loggedIn = True # needs to be False
         self.__overallPreference = {self.BOARDLEN:8, self.BOARDCOLOUR:"brown", self.TIME:3600}
 
-        #Label(frame, textvariable=f"welcome {self.__name}").pack()
+        #Label(frame, textvariable=f"welcome {self.__username}").pack()
         menuHeader = StringVar()
-        menuHeader.set(f"welcome {self.__name}")
+        menuHeader.set(f"welcome {self.__username}")
         Label(frame, textvariable=menuHeader).pack()
-        #self.__name.set("MrYun") # only for testing
+        #self.__username.set("MrYun") # only for testing
         
         Button(
             frame,
@@ -133,7 +133,7 @@ class Gui:
 
     def __handleAccountInput(self):
         if self.__dbInterface.loginValid(self.__username.get(), self.__password.get()):
-            self.__name = self.__username.get()
+            self.__username = self.__username.get()
             self.__loggedIn = True
         else:
             return
@@ -148,7 +148,7 @@ class Gui:
         AIwindow = Toplevel(self.__root)
         AIwindow.title("AI difficulty")
         boardLen = self.__overallPreference[self.BOARDLEN]
-        player1 = Player(self.__name, "white", 1, boardLen)
+        player1 = Player(self.__username, "white", 1, boardLen)
         clickedEasy=lambda player2=randomAI("EASY AI","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy", newOverallPreference)
         clickedHard=lambda player2=hardAI("HARD AI","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Hard", newOverallPreference)
         lvlsFrame = Frame(AIwindow)
@@ -168,7 +168,7 @@ class Gui:
         if self.__gameOnGoing or not self.__loggedIn:
             return
         boardLen = self.__overallPreference[self.BOARDLEN]
-        player1 = Player(self.__name, "white", 1, boardLen)
+        player1 = Player(self.__username, "white", 1, boardLen)
         player2 = Player("Player2", "black", -1, boardLen)
 
         game = Game(player1, player2, boardLen)
@@ -180,10 +180,27 @@ class Gui:
             return
         statsWindow = Toplevel(self.__root)
         statsWindow.title("Statistics")
+        statsWindow.geometry("200x300")
 
         frame = Frame(statsWindow)
-        Label(frame, text=self.__player1.name).grid(row=0,column=0)
-
+        frame.pack()
+        Label(frame, text=self.__username).grid(row=0,column=0)
+        stats = self.__dbInterface.getPlayerStats()
+        
+        Label(frame, text="Two Player").grid(row=0,column=0)
+        Label(frame, text="games").grid(row=1,column=0)
+        Label(frame, text=stats[0]).grid(row=1,column=1)
+        Label(frame, text="wins").grid(row=2,column=0)
+        Label(frame, text=stats[1]).grid(row=2,column=1)
+        Label(frame, text="loss").grid(row=3,column=0)
+        Label(frame, text=stats[2]).grid(row=3,column=1)
+        Label(frame, text="AI").grid(row=4,column=0)
+        Label(frame, text="games").grid(row=5,column=0)
+        Label(frame, text=stats[3]).grid(row=5,column=1)
+        Label(frame, text="wins").grid(row=6,column=0)
+        Label(frame, text=stats[4]).grid(row=6,column=1)
+        Label(frame, text="loss").grid(row=7,column=0)
+        Label(frame, text=stats[5]).grid(row=7,column=1)
 
 
     def __settings(self):

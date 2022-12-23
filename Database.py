@@ -41,11 +41,17 @@ class dbInterface2:
                 return pickle.loads(db.fetchall()[0][0])
             except:
                 return None
+
     def getPlayerData(self):
         with self.dbConnnect(self.__dbName) as db:
             db.execute("SELECT * from PlayerInfo WHERE username = ?", (self.__playerName,))
             data = db.fetchall()
             return data
+
+    def getPlayerStats(self):
+        with self.dbConnnect(self.__dbName) as db:
+            print(db.description)
+            return list(self.getPlayerData()[0][self.HUMANNUMGAMES:self.AILOSSES+1])
 
     def getPlayerSavedGame(self, savedGameID):
         with self.dbConnnect(self.__dbName) as db:
