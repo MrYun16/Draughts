@@ -65,48 +65,48 @@ class Gui:
         root = Tk()
         root.title("Draughts")
         root.geometry("200x400")
-        frame = Frame(root)
-        frame.pack()
+        self.__frame = Frame(root)
+        self.__frame.pack()
         self.__root = root
         self.__gameOnGoing = False
         self.__dbInterface = dbInterface2("database.db", "MrYun")
         self.__login()
-        self.__username = "MrYun" # string
+        #self.__username = "MrYun" # string
         self.__loggedIn = True # needs to be False
         self.__overallPreference = {self.BOARDLEN:8, self.BOARDCOLOUR:"brown", self.TIME:3600}
 
-        #Label(frame, textvariable=f"welcome {self.__username}").pack()
-        menuHeader = StringVar()
-        menuHeader.set(f"welcome {self.__username}")
-        Label(frame, textvariable=menuHeader).pack()
+        #Label(self.__frame, textvariable=f"welcome {self.__username}").pack()
+        #menuHeader = StringVar()
+        #menuHeader.set(f"welcome {self.__username}")
+        #Label(self.__frame, textvariable=menuHeader).pack()
         #self.__username.set("MrYun") # only for testing
         
         Button(
-            frame,
+            self.__frame,
             text="1 Player",
             command=self.__onePlayer # name of function, not calling function so no brackets
         ).pack(fill=X)  # expands button across horizontally 
 
         Button(
-            frame,
+            self.__frame,
             text="2 Player",
             command=self.__twoPlayer
         ).pack(fill=X) 
 
         Button(
-            frame,
+            self.__frame,
             text="Statistics",
             command=self.__statistics
         ).pack(fill=X) 
 
         Button(
-            frame,
+            self.__frame,
             text="Settings",
             command=self.__settings 
         ).pack(fill=X) 
 
         Button(
-            frame,
+            self.__frame,
             text="Load Games",
             command=self.__loadGame
         ).pack(fill=X)
@@ -114,29 +114,57 @@ class Gui:
         
 
         Button(
-            frame,
+            self.__frame,
             text="Quit",
             command=self.__quit 
         ).pack(fill=X) 
 
     def __login(self): # bad code
-        loginWindow = Toplevel(self.__root)
-        self.__username = Entry(loginWindow, width=50) # ???
-        self.__password = Entry(loginWindow, width=50) # ???
+        self.__loginWindow = Toplevel(self.__root)
+        self.__username = Entry(self.__loginWindow, width=50) # ???
+        self.__password = Entry(self.__loginWindow, width=50) # ???
 
         self.__username.grid(row=0, column=0)
-        Label(loginWindow, text="Username").grid(row=0, column=1)
+        Label(self.__loginWindow, text="Username").grid(row=0, column=1)
         self.__password.grid(row=1, column=0)
-        Label(loginWindow, text="Password").grid(row=1, column=1)
+        Label(self.__loginWindow, text="Password").grid(row=1, column=1)
         
-        Button(loginWindow, text="Submit", command = self.__handleAccountInput).grid(row=3)
+        Button(self.__loginWindow, text="Submit", command = self.__handleAccountInput).grid(row=3)
+        Button(self.__loginWindow, text="Sign Up", command = self.__clickedSignUp).grid(row=4)
+
+    def __clickedSignUp(self):
+        signUpWindow = Toplevel(self.__root)
+        self.__newUsername = Entry(signUpWindow, width=50)
+        self.__newUsername.grid(row=0, column=0)
+        Label(signUpWindow, text="New Username").grid(row=0, column=1)
+        self.__newPassword = Entry(signUpWindow, width=50)
+        self.__newPassword.grid(row=1, column=0)
+        Label(signUpWindow, text="New Password").grid(row=1, column=1)
+
+        Button(signUpWindow, text="Create", command = self.__handleAccountCreation).grid(row=3)
+
+    def __handleAccountCreation(self):
+        newUsername = self.__newUsername.get()
+        newPassword = self.__newPassword.get()
+        if len(newUsername) != 0 and len(newPassword) != 0:
+            defaultPreferenceDict = {self.BOARDLEN:8, self.BOARDCOLOUR:"red", self.TIME:-1}
+            self.__dbInterface.createAccount(newUsername,newPassword,defaultPreferenceDict)
+        else:
+            self.__newUsername.delete(0,END)
+            self.__newPassword.delete(0,END)
+
 
     def __handleAccountInput(self):
         if self.__dbInterface.loginValid(self.__username.get(), self.__password.get()):
             self.__username = self.__username.get()
             self.__loggedIn = True
+            menuHeader = StringVar()
+            menuHeader.set(f"welcome {self.__username}")
+            Label(self.__frame, textvariable=menuHeader).pack()
+            self.__loginWindow.destroy()
         else:
-            return
+            self.__username.delete(0,END)
+            self.__password.delete(0,END)
         
 
     def __AImenu(self):
@@ -149,9 +177,18 @@ class Gui:
         AIwindow.title("AI difficulty")
         boardLen = self.__overallPreference[self.BOARDLEN]
         player1 = Player(self.__username, "white", 1, boardLen)
-        clickedEasy=lambda player2=randomAI("EASY AI","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy", newOverallPreference)
-        clickedHard=lambda player2=hardAI("HARD AI","black",-1,boardLen):self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Hard", newOverallPreference)
         lvlsFrame = Frame(AIwindow)
+
+        def clickedEasy():
+            player2=randomAI("EASY AI","black",-1,boardLen)
+            self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy", newOverallPreference)
+            AIwindow.destroy()
+
+        def clickedHard():
+            player2=hardAI("HARD AI","black",-1,boardLen)
+            self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Hard", newOverallPreference)
+            AIwindow.destroy()
+
         Button(lvlsFrame, text="Easy", command = clickedEasy, pady=20).grid(row=0,column=0)
         Button(lvlsFrame, text="Hard", command = clickedHard, pady=20).grid(row=1,column=0)
         lvlsFrame.pack()
@@ -319,16 +356,25 @@ class Gui:
         self.numPieces1 = StringVar()
         self.numPieces1.set(self.__player1.numPieces)
 
-        clockDisplayString1 = StringVar()
-        clockDisplayString2 = StringVar()
+        player2Frame = Frame(gameWindow)
+        self.numPieces2 = StringVar()
+        self.numPieces2.set(self.__player2.numPieces)
+        Label(player2Frame, text=self.__player2.name, font=("Times",24)).grid(row=0,column=0)
+        Label(player2Frame, textvariable=self.numPieces2, font=("Times",24)).grid(row=0,column=1)
+        player2Frame.grid(row=2,column=0, sticky="W")
 
-        player1.createClock(preference[self.TIME], clockDisplayString1, self.__root)
-        player2.createClock(preference[self.TIME], clockDisplayString2, self.__root)
 
-        self.__player1.clock.timeLeft.trace("w", self.__handleIfWinner)
-        self.__player2.clock.timeLeft.trace("w", self.__handleIfWinner)
-        Label(player1Frame, textvariable=self.__player1.clock.clockDisplayString, font=("Times",24)).grid(row=0, column=2)
-        
+        if not player2.isAI:
+            clockDisplayString1 = StringVar()
+            clockDisplayString2 = StringVar()
+
+            player1.createClock(preference[self.TIME], clockDisplayString1, self.__root)
+            player2.createClock(preference[self.TIME], clockDisplayString2, self.__root)
+
+            self.__player1.clock.timeLeft.trace("w", self.__handleIfWinner)
+            self.__player2.clock.timeLeft.trace("w", self.__handleIfWinner)
+            Label(player1Frame, textvariable=self.__player1.clock.clockDisplayString, font=("Times",24)).grid(row=0, column=2)
+            Label(player2Frame, textvariable=self.__player2.clock.clockDisplayString, font=("Times",24)).grid(row=0, column=2, sticky="E")
 
         Label(player1Frame, text=self.__player1.name, font=("Times",24)).grid(row=0, column=0)
         Label(player1Frame, textvariable=self.numPieces1, font=("Times",24)).grid(row=0, column=1)
@@ -362,14 +408,7 @@ class Gui:
                 font=myFont
             ).grid(row=y,column=x)
         
-        player2Frame = Frame(gameWindow)
-        self.numPieces2 = StringVar()
-        self.numPieces2.set(self.__player2.numPieces)
-        Label(player2Frame, text=self.__player2.name, font=("Times",24)).grid(row=0,column=0)
-        Label(player2Frame, textvariable=self.numPieces2, font=("Times",24)).grid(row=0,column=1)
-        player2Frame.grid(row=2,column=0, sticky="W")
 
-        Label(player2Frame, textvariable=self.__player2.clock.clockDisplayString, font=("Times",24)).grid(row=0, column=2, sticky="E")
         
         self.__msgText = StringVar()
         self.__msgText.set("")
@@ -430,32 +469,24 @@ class Gui:
 
     def __handleIfWinner(self, *args):
         self.__winner = self.__game.getWinner()
-        if self.__winner:
+        if self.__winner: # winner by game rules
             self.__msgText.set(f"winner is {self.__winner.name}")
             self.__gameOnGoing = False
             self.__player1.clock.stop()
             self.__player2.clock.stop()
+        
         try:
             if self.__player1.clock.timeLeft.get() and not self.__player2.clock.timeLeft.get():
                 self.__msgText.set(f"winner is {self.__player1.name}")
+                self.__dbInterface.updateHumanStats(True)
                 self.__gameOnGoing = False
             elif self.__player2.clock.timeLeft.get() and not self.__player1.clock.timeLeft.get():
                 self.__msgText.set(f"winner is {self.__player2.name}")
+                self.__dbInterface.updateHumanStats(False)
                 self.__gameOnGoing = False
+
         except:
             pass
-
-        if not self.__gameOnGoing: # i.e. is winner
-            if self.__player2.isAI:
-                if self.__winner == self.__player1:
-                    self.__dbInterface.updateAIstats(True)
-                else:
-                    self.__dbInterface.updateAIstats(False)
-            else:
-                if self.__winner == self.__player1:
-                    self.__dbInterface.updateHumanStats(True)
-                else:
-                    self.__dbInterface.updateHumanStats(False)
 
     def __handleInput(self, x, y, preference): # inputs 0 indexed
         if self.__gameOnGoing: #while game ongoing
@@ -495,6 +526,7 @@ class Gui:
                         self.__msgText.set(e)
                         self.unhighlight()
             self.__handleAI(preference)
+            self.__handleIfWinner()
 
     def switchTimers(self): # this is called after play occurs
         self.__game.currentPlayer().clock.start()
@@ -505,8 +537,9 @@ class Gui:
             output = self.__game.currentPlayer.findMove(self.__game)
             self.__game.play(output[0], output[1], output[2], output[3])
             self.__updateBoard(preference)
-            if self.__game.currentPlayer.isAI:
+            if self.__game.currentPlayer.isAI: # AI in jumping spree
                 self.__handleAI(preference)
+     
 
     def __updateBoard(self, preference):
         boardLen = preference[self.BOARDLEN]

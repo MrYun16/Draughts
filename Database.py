@@ -18,16 +18,23 @@ class dbInterface2:
     def __init__(self, dbName, playerName):
         self.__dbName = dbName
         self.__playerName = playerName
+
+    def createAccount(self, username, password, dict):
+        with self.dbConnnect(self.__dbName) as db:
+            db.execute(f"INSERT INTO PlayerInfo VALUES (?,?,?,?,?,?,?,?,?)", (username,password,0,0,0,0,0,0,pickle.dumps(dict)))
     
     def loginValid(self, username, password1):
         with self.dbConnnect(self.__dbName) as db:
             statement = f"SELECT * from PlayerInfo WHERE username='{username}' AND password='{password1}'"
             db.execute(statement)
-            playerName = db.fetchall()[0]
-            if not playerName:
+            try:
+                playerName = db.fetchall()[0]
+                if not playerName:
+                    return False
+                self.__playerName = playerName
+                return True
+            except:
                 return False
-            self.__playerName = playerName
-            return True
 
     def updatePlayerPreferenceDict(self, dict):
         dict = pickle.dumps(dict)
