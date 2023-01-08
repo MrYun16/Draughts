@@ -4,7 +4,7 @@ from Game import GameError, Game, TimeError
 from tkinter import *
 from Player import Player, randomAI, hardAI
 from itertools import product
-from Database import dbInterface2
+from Database import dbInterface
 from clock import Clock
 import time
 import tkinter.font as font
@@ -69,17 +69,19 @@ class Gui:
         self.__frame.pack()
         self.__root = root
         self.__gameOnGoing = False
-        self.__dbInterface = dbInterface2("database.db", "MrYun")
+        
+        ##########################################################
+        # CATEGORY A ALGORITHMS: COMPLEX OOP - ASSOCIATION
+        # Creats a database interface object for GUI defined within GUI
+        # class - composition
+        # CATEGORY B ALGORITHMS: GENERATION OF OBJECTS USING OOP
+        ##########################################################
+        self.__dbInterface = dbInterface("database.db")
         self.__login()
-        #self.__username = "MrYun" # string
+
         self.__loggedIn = True # needs to be False
         self.__overallPreference = {self.BOARDLEN:8, self.BOARDCOLOUR:"brown", self.TIME:3600}
 
-        #Label(self.__frame, textvariable=f"welcome {self.__username}").pack()
-        #menuHeader = StringVar()
-        #menuHeader.set(f"welcome {self.__username}")
-        #Label(self.__frame, textvariable=menuHeader).pack()
-        #self.__username.set("MrYun") # only for testing
         
         Button(
             self.__frame,
@@ -147,6 +149,9 @@ class Gui:
         newUsername = self.__newUsername.get()
         newPassword = self.__newPassword.get()
         if len(newUsername) != 0 and len(newPassword) != 0:
+            ######################################################
+            #CATEGORY B MODEL: DICTIONARIES
+            #######################################################
             defaultPreferenceDict = {self.BOARDLEN:8, self.BOARDCOLOUR:"red", self.TIME:-1}
             self.__dbInterface.createAccount(newUsername,newPassword,defaultPreferenceDict)
         else:
@@ -179,6 +184,11 @@ class Gui:
         player1 = Player(self.__username, "white", 1, boardLen)
         lvlsFrame = Frame(AIwindow)
 
+
+        ##########################################################
+        # CATEGORY B ALGORITHMS: GENERATION OF OBJECTS USING OOP
+        # Created easy and hard AI objects for opponent (player 2)
+        ##########################################################
         def clickedEasy():
             player2=randomAI("EASY AI","black",-1,boardLen)
             self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy", newOverallPreference)
@@ -189,12 +199,11 @@ class Gui:
             self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Hard", newOverallPreference)
             AIwindow.destroy()
 
+
         Button(lvlsFrame, text="Easy", command = clickedEasy, pady=20).grid(row=0,column=0)
         Button(lvlsFrame, text="Hard", command = clickedHard, pady=20).grid(row=1,column=0)
         lvlsFrame.pack()
 
-        #player1, player2, game, windowName, preference
-    
     def __onePlayer(self):
         if self.__gameOnGoing or not self.__loggedIn:
             return
@@ -205,12 +214,15 @@ class Gui:
         if self.__gameOnGoing or not self.__loggedIn:
             return
         boardLen = self.__overallPreference[self.BOARDLEN]
+
+        ######################################################
+        # CATEGORY B ALGORITHMS: GENERATION OF OBJECTS USING OOP
+        # Created player 1 and player 2 classes to create game
+        #######################################################
         player1 = Player(self.__username, "white", 1, boardLen)
         player2 = Player("Player2", "black", -1, boardLen)
-
         game = Game(player1, player2, boardLen)
         self.__playWindow(player1, player2, game, "Two Player", self.__overallPreference)
-        self.__gameOnGoing = True
 
     def __statistics(self):
         if self.__gameOnGoing or not self.__loggedIn:
@@ -245,13 +257,16 @@ class Gui:
         if self.__gameOnGoing or not self.__loggedIn:
             return
         self.__overallPreference = self.__dbInterface.getPlayerPreferenceDict()
+        
         if self.__overallPreference is None:
             self.__overallPreference = {self.BOARDLEN:8, self.BOARDCOLOUR:"brown", self.TIME:3600}
 
         def updatePreference(key, value):
             self.__overallPreference[key] = value
+            print("before", self.__dbInterface.getPlayerPreferenceDict())
             self.__dbInterface.updatePlayerPreferenceDict(self.__overallPreference)
-        
+            print("after", self.__dbInterface.getPlayerPreferenceDict())
+
         settingsWindow = Toplevel(self.__root)
         settingsWindow.geometry("400x400")
         settingsWindow.title("settings")
@@ -484,21 +499,17 @@ class Gui:
                 self.__msgText.set(f"winner is {self.__player2.name}")
                 self.__dbInterface.updateHumanStats(False)
                 self.__gameOnGoing = False
-
         except:
             pass
 
     def __handleInput(self, x, y, preference): # inputs 0 indexed
         if self.__gameOnGoing: #while game ongoing
-            
-           # if self.__game.boardHistoryLen() == 1:
-            #    self.__player1Clock.start()
+            print(self.__highlightedSqr)
             x += 1
             y += 1
             if self.__highlightedSqr == None: #hasn't picked first square
                 try:
                     self.__game.checkIsOwnPiece(x, y)
-                    #self.__highlightedSqr = [x, y]
                     self.__msgText.set(f"highlighted {x}, {y}")
                     self.__highlight(x,y)
                 except GameError as e:

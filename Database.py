@@ -4,7 +4,7 @@ from contextlib import contextmanager
 import pickle
 
 
-class dbInterface2:
+class dbInterface:
     ...
     NAME = 0
     PASSWORD = 1
@@ -15,9 +15,8 @@ class dbInterface2:
     AIWINS = 6
     AILOSSES = 7
     PREFERENCEDICT = 8
-    def __init__(self, dbName, playerName):
+    def __init__(self, dbName):
         self.__dbName = dbName
-        self.__playerName = playerName
 
     def createAccount(self, username, password, dict):
         with self.dbConnnect(self.__dbName) as db:
@@ -28,10 +27,9 @@ class dbInterface2:
             statement = f"SELECT * from PlayerInfo WHERE username='{username}' AND password='{password1}'"
             db.execute(statement)
             try:
-                playerName = db.fetchall()[0]
-                if not playerName:
+                if len(db.fetchall()) == 0:
                     return False
-                self.__playerName = playerName
+                self.__playerName = username
                 return True
             except:
                 return False
@@ -43,12 +41,11 @@ class dbInterface2:
 
     def getPlayerPreferenceDict(self):
         with self.dbConnnect(self.__dbName) as db:
-            try:
-                db.execute(f"SELECT preferenceDict from PlayerInfo WHERE username = '{self.__playerName}'")
-                return pickle.loads(db.fetchall()[0][0])
-            except:
-                return None
-
+            print(self.__playerName, type(self.__playerName))
+            db.execute(f"SELECT preferenceDict from PlayerInfo WHERE username = '{self.__playerName}'")
+          #  print("db fetchall:",db.fetchall()[0][0])
+            return pickle.loads(db.fetchall()[0][0])
+            
     def getPlayerData(self):
         with self.dbConnnect(self.__dbName) as db:
             db.execute("SELECT * from PlayerInfo WHERE username = ?", (self.__playerName,))
@@ -73,7 +70,8 @@ class dbInterface2:
 
     def getAllPlayerSavedGameIDs(self):
         with self.dbConnnect(self.__dbName) as db:
-            db.execute(f"SELECT savedGameID from PlayerSavedGames WHERE username = '{self.__playerName}'")
+            #print(self.__playerName, self.__pla)
+            db.execute(f"SELECT savedGameID from PlayerSavedGames WHERE username = {self.__playerName} ")
             IDs = db.fetchall()
             return list(map("".join, IDs)) # returns each as a tuple
 
