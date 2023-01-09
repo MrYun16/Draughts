@@ -14,6 +14,25 @@ class Player:
         self.__direction = direction # 1 is down - so player one
         self.__colour = colour
         self.__isAI = False
+        self.__timeBeforeSaved = None # in demi sec
+
+
+    @property
+    def timeBeforeSaved(self):
+        return self.__timeBeforeSaved
+
+    ##########################################################
+    # CATEGORY A ALGORITHMS: COMPLEX OOP - ASSOCIATION
+    # Creats a Clock object for Player defined with the Player
+    # class - composition
+    # CATEGORY B ALGORITHMS: GENERATION OF OBJECTS USING OOP
+    ##########################################################
+    def createClock(self, startTime, clockDisplayString, win):
+        self.clock = Clock(startTime, clockDisplayString, win)
+
+    def deleteClock(self): # also saves the time into the player
+        self.__timeBeforeSaved = self.clock.currentTimeInDemiSec
+        del self.clock
 
     def changIsAI(self, new):
         self.__isAI = new
@@ -48,36 +67,25 @@ class Player:
     def amendNumPieces(self, n): #?
         self.__numPieces = n
 
-    def createTimer(self, initialTimeInSec, timeString):
-       # self.__Timer = Timer(initialTimeInSec, timeString)
-        #timeString.set("IN PLAYER")
-        new_thread = Thread(target=self.test, args=(timeString,))
-        new_thread.start()
-
-    def test(self, string):
-        for _ in range(3):
-            string.set(f"changed to {_}")
-            sleep(1)
-            
-
-    def startTimer(self):
-        self.__Timer.start()
-
-    def stopTimer(self):
-        self.__Timer.cancel()
-
 class AI(Player):
-    def __init__(self, name, colour, direction) -> None:
-        super().__init__(name, colour, direction)
+    def __init__(self, name, colour, direction, boardLen) -> None:
+        super().__init__(name, colour, direction, boardLen)
         self.changIsAI(True)
 
-    def getPossiblePlays(self, game): # in the format ls = [piece.x, piece.y, toCoord[0], toCoord[1]]
+    def _getPossiblePiecesToMoveWithDestination(self, game): # in the format ls = [piece.x, piece.y, toCoord[0], toCoord[1]]
         possiblePlays = []
         ownPieces = game.getOwnPieces()
         if game.jumpingPiece != None: # in jumping spree
             piece = game.jumpingPiece
             for toCoord in game.getSqrsToJumpTo(piece):
+
+        #############################################
+        # CATEGORY A ALGORITHMS: LIST OPERATIONS
+        # In the following three for loops, a list element is appended to 
+        # possiblePlays
+        #############################################
                 possiblePlays.append([piece.x+1, piece.y+1, toCoord[0]+1, toCoord[1]+1])
+
         elif game.playerCanJump():
             for piece in ownPieces:
                 if len(game.getSqrsToJumpTo(piece)) > 0:
@@ -91,7 +99,7 @@ class AI(Player):
         return possiblePlays
 
 
-    def evaluate(self, game, player): # only checking difference in material so far
+    def _evaluate(self, game, player): # only checking difference in material so far
         res = 0
         board = game.board
         for row in board[:]:
@@ -103,44 +111,84 @@ class AI(Player):
                         res -= 1
         return res
 
+    #####################################################################
+    # CATEGORY A MODEL: COMPLEX USER-DEFINED USE OF OOP - ABSTRACT METHOD
+    #####################################################################
     @abstractmethod
     def findMove(self, game):
         pass
 
+
+
+################################################################
+# CATEGORY A MODEL: COMPLEX USER-DEFINED USE OF OOP - INHERITANCE
+# the easy and hard AIs (randomAI and hardAI) are derived from 
+# the AI class, which is also derived from the Player Class
+################################################################
 class randomAI(AI):
-    def __init__(self, name, colour, direction) -> None:
-        super().__init__(name, colour, direction)
+    def __init__(self, name, colour, direction, boardLen) -> None:
+        super().__init__(name, colour, direction, boardLen)
 
+
+    ##########################################
+    # CATEGORY A MODEL: COMPLEX OOP
+    # Polymorphism - different implementations 
+    # for findMove between randomAI and the 
+    # following hardAI
+    ##########################################
     def findMove(self, game):
-        return choice(self.getPossiblePlays(game))
-
+        return choice(self._getPossiblePiecesToMoveWithDestination(game))
 
 class hardAI(AI):
     PLAY = 1
     GAME = 0
-    def __init__(self, name, colour, direction) -> None:
-        super().__init__(name, colour, direction)
+    def __init__(self, name, colour, direction, boardLen) -> None:
+        super().__init__(name, colour, direction, boardLen)
 
     def findMove(self, game):
-        print("in the findmove")
-        chosenPlay = self.minimax(3, game, None, game.currentPlayer)[1]
+        chosenPlay = self.__minimax(3, game, None, game.currentPlayer)[1]
         print(chosenPlay)
         return chosenPlay
 
-    def minimax(self, depth, game, prevPlay, maxingPlayer):
+    #######################################################################
+    # CATEGORY A ALGORITHM: Recursive Algorithms
+    # Using recursion to generate next game state of a tree for the minimax
+    ######################################################################
+    def __minimax(self, depth, game, prevPlay, maxingPlayer):
         if depth == 0:
-            return [self.evaluate(game, maxingPlayer),prevPlay] # node format = [game, play]
-        nodesValues =  [[node[self.PLAY], self.minimax(depth-1, node[self.GAME], prevPlay, maxingPlayer)] for node in self.getNextNodes(game)]
-       # print(f"depth{depth}: {[node[1] for node in self.getNextNodes(game)]}")
-        nodesValues.sort(key=lambda row: (row[0]))
+            return [self._evaluate(game, maxingPlayer),prevPlay]
+        nodesValues =  [[node[self.PLAY], self.__minimax(depth-1, node[self.GAME], prevPlay, maxingPlayer)] for node in self.__getNextNodes(game)] # node form = [correspondingGame, play], minimax returns 
+        #print(nodesValues)
+        
+        
+        #nodesValues.sort(key=lambda row: (row[1][0]))
+        
+        nodesValues = self._sort(nodesValues)
+        a = [n[1][0] for n in nodesValues]
+        if sorted(a) != a:
+            print(False)
         if maxingPlayer == game.currentPlayer: # maximising
             return [nodesValues[-1][1], nodesValues[-1][0]]
         else: # minimising
             return [nodesValues[0][1], nodesValues[0][0]]
 
-    def getNextNodes(self, game):
-        #print("getnextnodes")
-        possiblePlays = self.getPossiblePlays(game)
+    def _sort(self, nodesValues):
+        if len(nodesValues) == 1:
+            return nodesValues
+        nV1, nV2 = nodesValues[:len(nodesValues)//2], nodesValues[len(nodesValues)//2:]
+        nV1, nV2 = self._sort(nV1), self._sort(nV2)
+        ls = []
+        while len(nV1) and len(nV2):
+            if nV1[0][1][0] < nV2[0][1][0]:
+                del nV1[0]
+            else:
+                del nV1[0]
+        ls.extend(nV1)
+        ls.extend(nV2)
+        return ls
+
+    def __getNextNodes(self, game):
+        possiblePlays = self._getPossiblePiecesToMoveWithDestination(game)
         nextNodes = []
         for play in possiblePlays:
             newGame = deepcopy(game)
@@ -149,28 +197,3 @@ class hardAI(AI):
         if len(nextNodes) == 0:
             print("NODES IS 0")
         return nextNodes
-
-
-"""
-class player:
-    def init(self, name):
-        self.name = name
-        self.timer = 0
-
-    def printName(self):
-        print(self.name)
-
-    def incrementTimer(self):
-        self.timer += 1
-
-    def runTimer(self):
-        while True:
-            time.sleep(1)
-            self.incrementTimer()
-
-    def runTimer(self):
-        thread = threading.Thread(target=self.runTimer)
-        thread.daemon = True
-        thread.start()
-"""
-        
