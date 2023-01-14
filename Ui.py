@@ -14,14 +14,15 @@ from tkmacosx import ColorVar
 
 
 
-class Ui:
+class Terminal:
+    BOARDLEN = 8
     def __init__(self):
-        self.__game = Game(Player("Player1", None, 1), Player("Player2", None, -1), 8)
+        self.__game = Game(Player("Player1", "black", 1, self.BOARDLEN), Player("Player2", "black", -1, self.BOARDLEN), self.BOARDLEN)
 
     def getInput(self):
         invalid = True
         while invalid:
-            userInput = input().split()
+            userInput = list(input())
             if len(userInput) != 2:
                 print("Invalid input - please try again")
             else:
@@ -38,22 +39,25 @@ class Ui:
             notPossible = True
 
             while notPossible:
+                print("enter first coordinate as column row together e.g. 35")
                 x1, y1 = self.getInput()
                 try:
                     self.__game.checkIsOwnPiece(x1, y1)
+                    print("enter second coordinate as column row together e.g. 35")
+                    x2, y2 = self.getInput()
+                    try:
+                        self.__game.checkIsVacant(x2, y2)
+                        try:
+                            self.__game.play(x1, y1, x2, y2)
+                            notPossible = False
+                        except GameError as e:
+                            print(e)
+                    except GameError as e:
+                        print(e)
+                    
                 except GameError as e:
                     print(e)
-                x2, y2 = self.getInput()
-                try:
-                    self.__game.checkIsVacant(x2, y2)
-                except GameError as e:
-                    print(e)
-
-                try:
-                    self.__game.play(x1, y1, x2, y2)
-                    notPossible = False
-                except GameError as e:
-                    print(e)
+                
 
 class Gui:
     TIME = "time"
@@ -70,17 +74,17 @@ class Gui:
         self.__root = root
         self.__gameOnGoing = False
         
-        ##########################################################
+        ###############################################################
         # CATEGORY A ALGORITHMS: COMPLEX OOP - ASSOCIATION
         # Creats a database interface object for GUI defined within GUI
         # class - composition
         # CATEGORY B ALGORITHMS: GENERATION OF OBJECTS USING OOP
-        ##########################################################
+        ###############################################################
         self.__dbInterface = dbInterface("database.db")
         self.__login()
 
         self.__loggedIn = True # needs to be False
-        self.__overallPreference = {self.BOARDLEN:8, self.BOARDCOLOUR:"brown", self.TIME:3600}
+
 
         
         Button(
@@ -166,6 +170,7 @@ class Gui:
             menuHeader = StringVar()
             menuHeader.set(f"welcome {self.__username}")
             Label(self.__frame, textvariable=menuHeader).pack()
+            self.__overallPreference = self.__dbInterface.getPlayerPreferenceDict()
             self.__loginWindow.destroy()
         else:
             self.__username.delete(0,END)
@@ -257,7 +262,6 @@ class Gui:
         if self.__gameOnGoing or not self.__loggedIn:
             return
         self.__overallPreference = self.__dbInterface.getPlayerPreferenceDict()
-        
         if self.__overallPreference is None:
             self.__overallPreference = {self.BOARDLEN:8, self.BOARDCOLOUR:"brown", self.TIME:3600}
 
@@ -276,6 +280,13 @@ class Gui:
         initialTime = IntVar()
         initialTime.set(self.__overallPreference[self.TIME])
         Label(frame, text="Select Time:").grid(row=3,column=1)
+
+        ###########################################
+        # CATEGORY B MODEL: DICTIONARY
+        # The time option that users see displayed, 
+        # mapped to its corresponding numerical 
+        # time value in demi seconds
+        ###########################################
         timeInWordsToDemi = {
             "1min":3600,
             "3mins":10800,
@@ -568,6 +579,3 @@ class Gui:
         self.__root.mainloop()
         pass
 
-class Terminal(Ui):
-    def __init__(self, game):
-        super().__init__(game)
