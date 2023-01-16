@@ -12,6 +12,8 @@ import pickle
 import datetime
 from tkmacosx import ColorVar
 
+class DatabaseError(Exception):
+    pass
 
 
 class Terminal:
@@ -146,7 +148,8 @@ class Gui:
         self.__newPassword = Entry(signUpWindow, width=50)
         self.__newPassword.grid(row=1, column=0)
         Label(signUpWindow, text="New Password").grid(row=1, column=1)
-
+        self.__signUpMsgText = StringVar()
+        Label(signUpWindow, textvariable=self.__signUpMsgText).grid(row=2)
         Button(signUpWindow, text="Create", command = self.__handleAccountCreation).grid(row=3)
 
     def __handleAccountCreation(self):
@@ -157,8 +160,13 @@ class Gui:
             #CATEGORY B MODEL: DICTIONARIES
             #######################################################
             defaultPreferenceDict = {self.BOARDLEN:8, self.BOARDCOLOUR:"red", self.TIME:-1}
-            self.__dbInterface.createAccount(newUsername,newPassword,defaultPreferenceDict)
+            try:
+                self.__dbInterface.createAccount(newUsername,newPassword,defaultPreferenceDict)
+                self.__signUpMsgText.set("Account successfully created - can exit")
+            except DatabaseError as e:
+                self.__signUpMsgText.set(e)
         else:
+            self.__signUpMsgText.set("username, password or both empty")
             self.__newUsername.delete(0,END)
             self.__newPassword.delete(0,END)
 

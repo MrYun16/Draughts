@@ -3,6 +3,8 @@ from Player import *
 from contextlib import contextmanager
 import pickle
 
+class DatabaseError(Exception):
+    pass
 
 class dbInterface:
     ...
@@ -20,6 +22,10 @@ class dbInterface:
 
     def createAccount(self, username, password, dict):
         with self.dbConnnect(self.__dbName) as db:
+            db.execute(f"SELECT username FROM PlayerInfo")
+            createdUsernames = [tupledName[0] for tupledName in db.fetchall()]
+            if username in createdUsernames:
+                raise DatabaseError("username already exists")
             db.execute(f"INSERT INTO PlayerInfo VALUES (?,?,?,?,?,?,?,?,?)", (username,password,0,0,0,0,0,0,pickle.dumps(dict)))
     
     def loginValid(self, username, password1):
@@ -34,7 +40,13 @@ class dbInterface:
             except:
                 return False
 
+
+
     def updatePlayerPreferenceDict(self, dict):
+        ############################################
+        # CATEGORY B MODEL: TEXT FILES
+        # Dictionary converted to a binary text file
+        ############################################
         dict = pickle.dumps(dict)
         with self.dbConnnect(self.__dbName) as db:
             db.execute(f"UPDATE PlayerInfo SET preferenceDict = ? WHERE username = ?", (dict, self.__playerName,))
@@ -43,7 +55,11 @@ class dbInterface:
         with self.dbConnnect(self.__dbName) as db:
             print(self.__playerName, type(self.__playerName))
             db.execute(f"SELECT preferenceDict from PlayerInfo WHERE username = '{self.__playerName}'")
-          #  print("db fetchall:",db.fetchall()[0][0])
+            ############################################
+            # CATEGORY B MODEL: TEXT FILES
+            # text file converted back to dictionary and
+            # returned
+            ############################################
             return pickle.loads(db.fetchall()[0][0])
             
     def getPlayerData(self):
@@ -61,6 +77,11 @@ class dbInterface:
         with self.dbConnnect(self.__dbName) as db:
             db.execute("SELECT player1, player2, savedGame, gamePreference from PlayerSavedGames WHERE username = ? and savedGameID = ? ", (str(self.__playerName), str(savedGameID),))
             data = db.fetchall()
+            ############################################
+            # CATEGORY B MODEL: TEXT FILES
+            # text files converted back to dictionary and
+            # class instances
+            ############################################
             player1, player2, game, preference = pickle.loads(data[0][0]), pickle.loads(data[0][1]), pickle.loads(data[0][2]), pickle.loads(data[0][3])
             return player1, player2, game, preference
 
@@ -77,6 +98,11 @@ class dbInterface:
 
     def addSavedGame(self, player1, player2, game, savedGameID, currentPreference):
         with self.dbConnnect(self.__dbName) as db:
+            ############################################
+            # CATEGORY B MODEL: TEXT FILES
+            # converting classes and dictionary to 
+            # text file
+            ############################################
             pickledPlayer1 = pickle.dumps(player1)
             pickledPlayer2 = pickle.dumps(player2)
             pickledGame = pickle.dumps(game)
