@@ -127,7 +127,8 @@ class Gui:
             command=self.__quit 
         ).pack(fill=X) 
 
-    def __login(self): # bad code
+    def __login(self): 
+        self.__gameOnGoing = True
         self.__loginWindow = Toplevel(self.__root)
         self.__username = Entry(self.__loginWindow, width=50) # ???
         self.__password = Entry(self.__loginWindow, width=50) # ???
@@ -172,6 +173,9 @@ class Gui:
 
 
     def __handleAccountInput(self):
+
+       
+
         if self.__dbInterface.loginValid(self.__username.get(), self.__password.get()):
             self.__username = self.__username.get()
             self.__loggedIn = True
@@ -180,6 +184,7 @@ class Gui:
             Label(self.__frame, textvariable=menuHeader).pack()
             self.__overallPreference = self.__dbInterface.getPlayerPreferenceDict()
             self.__loginWindow.destroy()
+            self.__gameOnGoing = False
         else:
             self.__username.delete(0,END)
             self.__password.delete(0,END)
@@ -256,14 +261,24 @@ class Gui:
         Label(frame, text=stats[1]).grid(row=2,column=1)
         Label(frame, text="loss").grid(row=3,column=0)
         Label(frame, text=stats[2]).grid(row=3,column=1)
-        Label(frame, text="AI").grid(row=4,column=0)
-        Label(frame, text="games").grid(row=5,column=0)
-        Label(frame, text=stats[3]).grid(row=5,column=1)
-        Label(frame, text="wins").grid(row=6,column=0)
-        Label(frame, text=stats[4]).grid(row=6,column=1)
-        Label(frame, text="loss").grid(row=7,column=0)
-        Label(frame, text=stats[5]).grid(row=7,column=1)
-
+        Label(frame, text="win%").grid(row=4, column=0)
+        if stats[0] != 0:
+            Label(frame, text=f"{int((stats[1]/stats[0])*100)}").grid(row=4, column=1)
+        else:
+            Label(frame, text=f"{0}").grid(row=4, column=1)
+        Label(frame, text="AI").grid(row=5,column=0)
+        Label(frame, text="games").grid(row=6,column=0)
+        Label(frame, text=stats[3]).grid(row=6,column=1)
+        Label(frame, text="wins").grid(row=7,column=0)
+        Label(frame, text=stats[4]).grid(row=7,column=1)
+        Label(frame, text="loss").grid(row=8,column=0)
+        Label(frame, text=stats[5]).grid(row=8,column=1)
+        Label(frame, text="win%").grid(row=9, column=0)
+        if stats[3] != 0:
+            Label(frame, text=f"{int((stats[4]/stats[3])*100)}").grid(row=9, column=1)
+        else:
+            Label(frame, text=f"{0}").grid(row=9, column=1)
+  
 
     def __settings(self):
 
