@@ -1,8 +1,8 @@
-from sqlite3 import *
+import sqlite3
 from Player import *
 import pickle
 
-con = connect("database.db")
+con = sqlite3.connect("database.db")
 cur = con.cursor()
 
 """cur.execute('''CREATE TABLE Accounts

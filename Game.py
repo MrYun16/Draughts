@@ -6,21 +6,42 @@ class Game:
     EMPTY = " " # smth
     VECTS = [[-2, -2], [-2, 2], [2, -2], [2, 2]]
     def __init__(self, player1, player2, boardLen):
+        #############################################
+        # CATEGORY A MODEL: COMPLEX OOP - ASSOCIATION
+        # The player objects belonging to Game is
+        # aggregation
+        #############################################
         self.__player1 = player1
         self.__player2 = player2
         self.__boardLen = boardLen
         self.__currentPlayer = self.__player1
         self.__jumpingPiece = None # piece that must keeping jumping if possible
+
+        ##########################################
+        # CATEGORY B MODEL: MULTI-DIMENSIONAL ARRAY
+        # This board array is 2 dimensional
+        ###########################################
         self.__board = [[self.EMPTY for _ in range(self.boardLen)] for _ in range(self.boardLen)]
+
+        #########################
+        # CATEGORY A MODEL: STACKS
+        # Implemented using python
+        # lists
+        #########################
         self.__boardHistory = []
         self.__piecesHistory = [] # contains [player1.numpieces, player2.numpieces]
         self.__currentPlayerHistory = [] # uses player's direction
         self.__jumpingPieceHistory = []
-        self.__resigned = None
-        #self.__justUndoed = False
+        
+
         self.prepareBoard()
         self.updateHistory()
 
+    def updatePlayer1(self, player):
+        self.__player1 = player
+
+    def updatePlayer2(self, player):
+        self.__player2 = player
     
     def boardHistoryLen(self):
         return len(self.__boardHistory)
@@ -31,6 +52,10 @@ class Game:
 
     def prepareBoard(self): # self, colour, direction, x, y
         span = int((self.__boardLen-2)/2)
+
+        ######################################################
+        #CATEGORY A ALGORITHMS: GENERATION OF OBJECTS USING OOP
+        #######################################################
         for i in range(span*self.__boardLen):
             row, col = i//self.__boardLen, i%self.__boardLen
             if (row+i+1)%2:
@@ -43,6 +68,11 @@ class Game:
     @property
     def currentPlayer(self):
         return self.__currentPlayer
+
+    def nonCurrentPlayer(self):
+        if self.currentPlayer == self.__player1:
+            return self.__player2
+        return self.__player1
 
     @property
     def jumpingPiece(self):
@@ -60,10 +90,13 @@ class Game:
         if len(self.__piecesHistory) == 1:
             raise GameError("Nothing to undo")
 
-        del self.__boardHistory[-1]
-        del self.__piecesHistory[-1]
-        del self.__jumpingPieceHistory[-1]
-        del self.__currentPlayerHistory[-1]
+        ######################################
+        #CATEGORY A ALGORITHM: STACK OPERATIONS
+        #######################################
+        del self.__boardHistory.pop()
+        del self.__piecesHistory.pop()
+        del self.__jumpingPieceHistory.pop()
+        del self.__currentPlayerHistory.pop()
         self.__justUndoed = True
         
         self.__board = deepcopy(self.__boardHistory[-1])
@@ -73,6 +106,9 @@ class Game:
         self.__currentPlayer = self.__player1 if self.__currentPlayerHistory[-1] == 1 else self.__player2
 
     def updateHistory(self):
+        #######################################
+        #CATEGORY A ALGORITHM: STACK OPERATIONS
+        #######################################
         self.__boardHistory.append(deepcopy(self.__board))
         self.__piecesHistory.append([self.__player1.numPieces, self.__player2.numPieces])
         self.__jumpingPieceHistory.append(self.__jumpingPiece)
@@ -88,6 +124,11 @@ class Game:
         elif currentPiece.colour != self.__currentPlayer.colour:
             raise GameError("Not your piece")  
 
+
+    ###################################################
+    # CATEGORY C MODEL: SINGLE-DIMENSIONAL ARRAY
+    # Following function returns a list of object Piece
+    ###################################################
     def getOwnPieces(self):
         pieces = []
         for y in range(self.boardLen):
@@ -106,8 +147,7 @@ class Game:
         if self.__board[y][x] != self.EMPTY:
             raise GameError("Square occupied")
 
-    def resign(self):
-        self.__resigned = self.__currentPlayer
+
 
     def play(self, x1, y1, x2, y2): # accepts 1 indexed
         x1 = x1 - 1
@@ -182,7 +222,15 @@ class Game:
         if [x2, y2] in self.getSqrsToMoveTo(currentPiece):
             return True
         return False
+
+
     def move(self, currentPiece, x2, y2):
+
+        ##############################################
+        # CATEGORY A ALGORITHMS: LIST OPERATIONS
+        # In this case, specific element of 2D arrays is
+        # accessed and amended
+        ###############################################
         self.__board[y2][x2] = currentPiece
         self.__board[currentPiece.y][currentPiece.x] = self.EMPTY
         currentPiece.updateXY(x2, y2)
@@ -190,6 +238,11 @@ class Game:
     def jump(self, currentPiece, x2, y2):
         x1, y1 = currentPiece.x, currentPiece.y
         self.move(currentPiece, x2, y2)
+
+        ####################################################
+        # CATEGORY C MODEL: SIMPLE MATHEMATICAL CALCULATIONS
+        # Following finds middle square between two squares
+        ####################################################
         self.__board[int(0.5*(y1 + y2))][int(0.5*(x1 + x2))] = self.EMPTY
         if self.__currentPlayer == self.__player1:
             self.__player2.amendNumPieces(self.__player2.numPieces-1)
@@ -200,24 +253,43 @@ class Game:
         return str(self.__board[y][x])
 
     def switchTurn(self):
-        if self.__currentPlayer == self.__player1:
-            self.__player1.clock.stop()
-            self.__player2.clock.start()
-            self.__currentPlayer = self.__player2
+        if not self.__player2.isAI:
+            if self.__currentPlayer == self.__player1:
+                try:
+                    self.__player1.clock.stop()
+                    self.__player2.clock.start()
+                except:
+                    pass
+                self.__currentPlayer = self.__player2
+            else:
+                try:
+                    self.__player2.clock.stop()
+                    self.__player1.clock.start()
+                except:
+                    pass
+                self.__currentPlayer = self.__player1
         else:
-            self.__player2.clock.stop()
-            self.__player1.clock.start()
-            self.__currentPlayer = self.__player1
+            if self.__currentPlayer == self.__player1:
+                self.__currentPlayer = self.__player2
+            else:
+                self.__currentPlayer = self.__player1
 
     def getWinner(self):
-        if self.__resigned:
-            return self.__resigned
+
         if self.__player1.numPieces == 0:
             return self.__player1
         elif self.__player2.numPieces == 0:
             return self.__player2
         return None
 
+
+    ###########################################
+    # CATEGORY B MODEL: MULTI-DIMENSIONAL ARRAY
+    # returns a list of lists, which represent
+    # vectors of where the piece can next move
+    # within the board but disregarding
+    # surrounding pieces
+    ###########################################
     def nextCoordsViaVectors(self, piece, vectors): #ensures coords are empty and in range
         coords = []
         for vect in vectors:
@@ -229,6 +301,14 @@ class Game:
                 coords.append([x2,y2])
         return coords
 
+
+    ###########################################
+    # CATEGORY B MODEL: MULTI-DIMENSIONAL ARRAY
+    # returns a list of lists, which represent
+    # vectors of where the piece can next move
+    # within the board and regarding surrounding
+    # pieces
+    ###########################################
     def getSqrsToJumpTo(self, piece): # return coords
         temp = self.nextCoordsViaVectors(piece, piece.jumpVects)
         coords = []
@@ -252,3 +332,5 @@ class Game:
 class GameError(Exception):
     pass
 
+class TimeError(Exception):
+    pass

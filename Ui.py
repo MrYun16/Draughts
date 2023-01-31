@@ -4,7 +4,7 @@ from Game import GameError, Game, TimeError
 from tkinter import *
 from Player import Player, randomAI, hardAI
 from itertools import product
-from Database import dbInterface
+from Database import dbInterface, databaseError
 from clock import Clock
 import time
 import tkinter.font as font
@@ -16,10 +16,13 @@ class DatabaseError(Exception):
     pass
 
 
+
+
+
 class Terminal:
     BOARDLEN = 8
     def __init__(self):
-        self.__game = Game(Player("Player1", "black", 1, self.BOARDLEN), Player("Player2", "black", -1, self.BOARDLEN), self.BOARDLEN)
+        self.__game = Game(Player("Player1", "black", 1, self.BOARDLEN), Player("Player2", "white", -1, self.BOARDLEN), self.BOARDLEN)
 
     def getInput(self):
         invalid = True
@@ -59,6 +62,10 @@ class Terminal:
                     
                 except GameError as e:
                     print(e)
+                if self.__game.getWinner():
+                    print(f"winner is: {self.__game.getWinner}")
+                    print("game now finished")
+                    break
                 
 
 class Gui:
@@ -84,7 +91,6 @@ class Gui:
         ###############################################################
         self.__dbInterface = dbInterface("database.db")
         self.__login()
-
         self.__loggedIn = True # needs to be False
 
 
@@ -116,7 +122,7 @@ class Gui:
         Button(
             self.__frame,
             text="Load Games",
-            command=self.__loadGame
+            command=self.__loadGameWindow
         ).pack(fill=X)
 
         
@@ -164,7 +170,7 @@ class Gui:
             try:
                 self.__dbInterface.createAccount(newUsername,newPassword,defaultPreferenceDict)
                 self.__signUpMsgText.set("Account successfully created - can exit")
-            except DatabaseError as e:
+            except databaseError as e:
                 self.__signUpMsgText.set(e)
         else:
             self.__signUpMsgText.set("username, password or both empty")
@@ -173,9 +179,6 @@ class Gui:
 
 
     def __handleAccountInput(self):
-
-       
-
         if self.__dbInterface.loginValid(self.__username.get(), self.__password.get()):
             self.__username = self.__username.get()
             self.__loggedIn = True
@@ -240,6 +243,11 @@ class Gui:
         player1 = Player(self.__username, "white", 1, boardLen)
         player2 = Player("Player2", "black", -1, boardLen)
         game = Game(player1, player2, boardLen)
+        clockDisplayString1 = StringVar()
+        clockDisplayString2 = StringVar()
+
+        player1.createClock(self.__overallPreference[self.TIME], clockDisplayString1, self.__root)
+        player2.createClock(self.__overallPreference[self.TIME], clockDisplayString2, self.__root)
         self.__playWindow(player1, player2, game, "Two Player", self.__overallPreference)
 
     def __statistics(self):
@@ -346,7 +354,7 @@ class Gui:
         boardMenu.grid(row=5,column=2,sticky="EW")
     
 
-    def __loadGame(self):
+    def __loadGameWindow(self):
         loadGameWindow = Toplevel(self.__root)
         loadGameWindow.geometry("400x400")
         loadGameWindow.title("Saved Games")
@@ -377,11 +385,11 @@ class Gui:
         loadWin.destroy()
         self.__dbInterface.deletePlayerSavedGame(gameID)
 
-        clockDisplayString1 = StringVar()
-        clockDisplayString2 = StringVar()
-
-        player1.createClock(player1.timeBeforeSaved, clockDisplayString1, self.__root)
-        player2.createClock(player2.timeBeforeSaved, clockDisplayString2, self.__root)
+        if player2.isAI == False:
+            clockDisplayString1 = StringVar()
+            clockDisplayString2 = StringVar()
+            player1.createClock(player1.timeBeforeSaved, clockDisplayString1, self.__root)
+            player2.createClock(player2.timeBeforeSaved, clockDisplayString2, self.__root)
 
         game.updatePlayer1(player1)
         game.updatePlayer2(player2)
@@ -414,11 +422,6 @@ class Gui:
 
 
         if not player2.isAI:
-            clockDisplayString1 = StringVar()
-            clockDisplayString2 = StringVar()
-
-            player1.createClock(preference[self.TIME], clockDisplayString1, self.__root)
-            player2.createClock(preference[self.TIME], clockDisplayString2, self.__root)
 
             self.__player1.clock.timeLeft.trace("w", self.__handleIfWinner)
             self.__player2.clock.timeLeft.trace("w", self.__handleIfWinner)
@@ -463,7 +466,7 @@ class Gui:
         self.__msgText.set("")
         Label(gameWindow, textvariable=self.__msgText).grid(row=3,column=0)
 
-        dismissPressed=lambda: self.dismiss(gameWindow)
+        dismissPressed=lambda: self.__dismiss(gameWindow)
         continuePressed=lambda : self.__saveGame(gameWindow)
         undoPressed=lambda : self.__undo(preference)
 
@@ -471,8 +474,13 @@ class Gui:
         Button(gameWindow, text="Undo", command=undoPressed).grid(row=4,column=3)
         Button(gameWindow, text="Continue for later", command=continuePressed).grid(row=4,column=1)
 
-    def __saveGame(self, gameWin): # ADD GAME TO ARGUMENT later
-        if self.__gameOnGoing:
+    def __saveGame(self, gameWin): 
+        if self.__gameOnGoing and self.__player2.isAI == False:
+            self.__player1.amendTimeBeforeSaved(self.__player1.clock.currentTimeInDemiSec)
+            self.__player2.amendTimeBeforeSaved(self.__player2.clock.currentTimeInDemiSec)
+
+         
+
             self.__player1.deleteClock() # clock contains tkinter, tkinter cannot be pickled
             self.__player2.deleteClock()
 
@@ -481,12 +489,13 @@ class Gui:
             self.__dbInterface.addSavedGame(self.__player1, self.__player2, self.__game, ID, self.__overallPreference)
             self.__gameOnGoing = False
             gameWin.destroy()
-        
+        if self.__gameOnGoing and self.__player2.isAI == True:
+            ID = datetime.datetime.now().strftime("%H:%M:%S")
+            self.__dbInterface.addSavedGame(self.__player1, self.__player2, self.__game, ID, self.__overallPreference)
+            self.__gameOnGoing = False
+            gameWin.destroy()
 
-    def updateScoreLabel(self):
-        self.numPieces2.set(self.__player2.numPieces)
-        self.numPieces1.set(self.__player1.numPieces)
-        print(self.numPieces2.get(), self.numPieces1.get())
+
 
     def __highlight(self, col, row):
         originalColour = self.__buttonColours[row-1][col-1]
@@ -494,13 +503,13 @@ class Gui:
         self.__highlightedSqr = [row, col]
         self.__buttonColours[row-1][col-1].set("yellow")
 
-    def unhighlight(self):
+    def __unhighlight(self):
         row, col = self.__highlightedSqr[0]-1, self.__highlightedSqr[1]-1
         self.__buttonColours[row][col].set(self.__highlightedOriginalCol)
         self.__highlightedOriginalCol = None
         self.__highlightedSqr = None
 
-    def dismiss(self, window):
+    def __dismiss(self, window):
         self.__gameOnGoing = False
         window.destroy()
 
@@ -551,7 +560,7 @@ class Gui:
             else: #already picked first square
                 if x == self.__highlightedSqr[1] and y == self.__highlightedSqr[0]:
                     self.__msgText.set(f"highlighted square cancelled")
-                    self.unhighlight()
+                    self.__unhighlight()
                 else:
                     try:
                         self.__game.checkIsVacant(x, y)
@@ -559,23 +568,20 @@ class Gui:
                             self.__game.play(self.__highlightedSqr[1], self.__highlightedSqr[0], x, y)
                             self.__msgText.set("successful")
                             self.__updateBoard(preference)
-                            self.unhighlight()
+                            self.__unhighlight()
                             self.__handleIfWinner()
-                            #self.switchTimers()
+                   
                         except GameError as e:
                             self.__msgText.set(e)
-                            self.unhighlight()
+                            self.__unhighlight()
                         except TimeError as e:
                             self.__msgText.set(e)
                     except GameError as e:
                         self.__msgText.set(e)
-                        self.unhighlight()
+                        self.__unhighlight()
             self.__handleAI(preference)
             self.__handleIfWinner()
 
-    def switchTimers(self): # this is called after play occurs
-        self.__game.currentPlayer().clock.start()
-        self.__game.nonCurrentPlayer().clock.stop()
 
     def __handleAI(self, preference):
         if self.__game.currentPlayer.isAI:
