@@ -126,10 +126,10 @@ class AI(Player):
 
 ################################################################
 # CATEGORY A MODEL: COMPLEX USER-DEFINED USE OF OOP - INHERITANCE
-# the easy and hard AIs (randomAI and hardAI) are derived from 
+# the easy and hard AIs (easyAI and hardAI) are derived from 
 # the AI class, which is also derived from the Player Class
 ################################################################
-class randomAI(AI):
+class easyAI(AI):
     def __init__(self, name, colour, direction, boardLen) -> None:
         super().__init__(name, colour, direction, boardLen)
 
@@ -137,7 +137,7 @@ class randomAI(AI):
     ##########################################
     # CATEGORY A MODEL: COMPLEX OOP
     # Polymorphism - different implementations 
-    # for findMove between randomAI and the 
+    # for findMove between easyAI and the 
     # following hardAI
     ##########################################
     def findMove(self, game):

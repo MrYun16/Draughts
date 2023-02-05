@@ -2,7 +2,7 @@ from msilib.schema import Font
 from turtle import width
 from Game import GameError, Game, TimeError
 from tkinter import *
-from Player import Player, randomAI, hardAI
+from Player import Player, easyAI, hardAI
 from itertools import product
 from Database import dbInterface, databaseError
 from clock import Clock
@@ -213,7 +213,7 @@ class Gui:
         # Created easy and hard AI objects for opponent (player 2)
         ##########################################################
         def clickedEasy():
-            player2=randomAI("EASY AI","white",-1,boardLen)
+            player2=easyAI("EASY AI","white",-1,boardLen)
             self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy", newOverallPreference)
             AIwindow.destroy()
 
