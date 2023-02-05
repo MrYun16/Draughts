@@ -2,8 +2,9 @@ from sqlite3 import *
 from Player import *
 from contextlib import contextmanager
 import pickle
+from Game import GameError
 
-class DatabaseError(Exception):
+class databaseError(Exception):
     pass
 
 class dbInterface:
@@ -21,20 +22,25 @@ class dbInterface:
         self.__dbName = dbName
 
     def createAccount(self, username, password, dict):
-        with self.dbConnnect(self.__dbName) as db:
+        with self.__dbConnect(self.__dbName) as db:
             db.execute(f"SELECT username FROM PlayerInfo")
             createdUsernames = [tupledName[0] for tupledName in db.fetchall()]
             if username in createdUsernames:
-                raise DatabaseError("username already exists")
+                raise databaseError("username already exists")
             db.execute(f"INSERT INTO PlayerInfo VALUES (?,?,?,?,?,?,?,?,?)", (username,password,0,0,0,0,0,0,pickle.dumps(dict)))
-    
+
+
+
+
+
+
     def loginValid(self, username, password1):
-        with self.dbConnnect(self.__dbName) as db:
+        with self.__dbConnect(self.__dbName) as db:
             statement = f"SELECT * from PlayerInfo WHERE username='{username}' AND password='{password1}'"
             db.execute(statement)
             try:
                 if len(db.fetchall()) == 0:
-                    return False
+                    raise databaseError("enter again")
                 self.__playerName = username
                 return True
             except:
@@ -48,12 +54,12 @@ class dbInterface:
         # Dictionary converted to a binary text file
         ############################################
         dict = pickle.dumps(dict)
-        with self.dbConnnect(self.__dbName) as db:
+        with self.__dbConnect(self.__dbName) as db:
             db.execute(f"UPDATE PlayerInfo SET preferenceDict = ? WHERE username = ?", (dict, self.__playerName,))
 
     def getPlayerPreferenceDict(self):
-        with self.dbConnnect(self.__dbName) as db:
-            print(self.__playerName, type(self.__playerName))
+        with self.__dbConnect(self.__dbName) as db:
+            
             db.execute(f"SELECT preferenceDict from PlayerInfo WHERE username = '{self.__playerName}'")
             ############################################
             # CATEGORY B MODEL: TEXT FILES
@@ -61,20 +67,20 @@ class dbInterface:
             # returned
             ############################################
             return pickle.loads(db.fetchall()[0][0])
-            
+
     def getPlayerData(self):
-        with self.dbConnnect(self.__dbName) as db:
+        with self.__dbConnect(self.__dbName) as db:
             db.execute("SELECT * from PlayerInfo WHERE username = ?", (self.__playerName,))
             data = db.fetchall()
             return data
 
     def getPlayerStats(self):
-        with self.dbConnnect(self.__dbName) as db:
-            print(db.description)
+        with self.__dbConnect(self.__dbName) as db:
+           
             return list(self.getPlayerData()[0][self.HUMANNUMGAMES:self.AILOSSES+1])
 
     def getPlayerSavedGame(self, savedGameID):
-        with self.dbConnnect(self.__dbName) as db:
+        with self.__dbConnect(self.__dbName) as db:
             db.execute("SELECT player1, player2, savedGame, gamePreference from PlayerSavedGames WHERE username = ? and savedGameID = ? ", (str(self.__playerName), str(savedGameID),))
             data = db.fetchall()
             ############################################
@@ -86,18 +92,18 @@ class dbInterface:
             return player1, player2, game, preference
 
     def deletePlayerSavedGame(self, savedGameID):
-        with self.dbConnnect(self.__dbName) as db:
+        with self.__dbConnect(self.__dbName) as db:
             db.execute(f"DELETE from PlayerSavedGames WHERE savedGameID = '{savedGameID}'")
 
     def getAllPlayerSavedGameIDs(self):
-        with self.dbConnnect(self.__dbName) as db:
-            #print(self.__playerName, self.__pla)
-            db.execute(f"SELECT savedGameID from PlayerSavedGames WHERE username = {self.__playerName} ")
+        with self.__dbConnect(self.__dbName) as db:
+            
+            db.execute(f"SELECT savedGameID from PlayerSavedGames WHERE username = '{self.__playerName}' ")
             IDs = db.fetchall()
             return list(map("".join, IDs)) # returns each as a tuple
 
     def addSavedGame(self, player1, player2, game, savedGameID, currentPreference):
-        with self.dbConnnect(self.__dbName) as db:
+        with self.__dbConnect(self.__dbName) as db:
             ############################################
             # CATEGORY B MODEL: TEXT FILES
             # converting classes and dictionary to 
@@ -111,18 +117,19 @@ class dbInterface:
             db.execute("INSERT INTO PlayerSavedGames VALUES (?,?,?,?,?,?)", [savedGameID, pickledPlayer1, pickledPlayer2, pickledGame,  pickledPreference, player1.name])
         
     
-    def updateAIstats(self, won): # can be implemented better
-        with self.dbConnnect(self.__dbName) as db:
+    def updateAIstats(self, won): 
+        with self.__dbConnect(self.__dbName) as db:
             data = list(self.getPlayerData()[0])
             data[self.AINUMGAMES] += 1
             if won:
                 data[self.AIWINS] += 1
             else:
                 data[self.AILOSSES] += 1
-            db.execute("UPDATE PlayerInfo SET username = ?, AInumGames = ?, AIwins = ?, AIlosses = ?", data)
+            ls = [data[self.AINUMGAMES],data[self.AIWINS],data[self.AILOSSES]]
+            db.execute("UPDATE PlayerInfo SET AInumGames = ?, AIwins = ?, AIlosses = ?", ls)
 
     def updateHumanStats(self, won):
-        with self.dbConnnect(self.__dbName) as db:
+        with self.__dbConnect(self.__dbName) as db:
             data = list(self.getPlayerData()[0])
             data[self.HUMANNUMGAMES] += 1
             if won:
@@ -130,12 +137,12 @@ class dbInterface:
             else:
                 data[self.HUMANLOSSES] += 1
             ls = [data[self.HUMANNUMGAMES],data[self.HUMANWINS],data[self.HUMANLOSSES]]
-            print("list", ls)
+     
             db.execute("UPDATE PlayerInfo SET humanNumGames = ?, humanWins = ?, humanLosses = ?", ls)
 
 
     @contextmanager
-    def dbConnnect(self, db):
+    def __dbConnect(self, db):
         conn = connect(db)
         try:
             cur = conn.cursor()

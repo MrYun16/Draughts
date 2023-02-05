@@ -16,12 +16,9 @@ class Game:
         self.__boardLen = boardLen
         self.__currentPlayer = self.__player1
         self.__jumpingPiece = None # piece that must keeping jumping if possible
+        
 
-        ##########################################
-        # CATEGORY B MODEL: MULTI-DIMENSIONAL ARRAY
-        # This board array is 2 dimensional
-        ###########################################
-        self.__board = [[self.EMPTY for _ in range(self.boardLen)] for _ in range(self.boardLen)]
+        
 
         #########################
         # CATEGORY A MODEL: STACKS
@@ -53,17 +50,25 @@ class Game:
     def prepareBoard(self): # self, colour, direction, x, y
         span = int((self.__boardLen-2)/2)
 
+        ##########################################
+        # CATEGORY B MODEL: MULTI-DIMENSIONAL ARRAY
+        # This board array is 2 dimensional
+        ###########################################
+        self.__board = [[self.EMPTY for _ in range(self.boardLen)] for _ in range(self.boardLen)]
+       
         ######################################################
         #CATEGORY A ALGORITHMS: GENERATION OF OBJECTS USING OOP
         #######################################################
         for i in range(span*self.__boardLen):
             row, col = i//self.__boardLen, i%self.__boardLen
             if (row+i+1)%2:
-                self.__board[row][col] = Stone("white", 1, col, row)
+                self.__board[row][col] = Stone("black", 1, col, row)
         for i in range(span*self.__boardLen):
             row, col = self.__boardLen-span + i//self.__boardLen, i%self.__boardLen
             if (row+i+1)%2:
-                self.__board[row][col] = Stone("black", -1, col, row)
+                self.__board[row][col] = Stone("white", -1, col, row)
+
+  
                 
     @property
     def currentPlayer(self):
@@ -93,10 +98,10 @@ class Game:
         ######################################
         #CATEGORY A ALGORITHM: STACK OPERATIONS
         #######################################
-        del self.__boardHistory.pop()
-        del self.__piecesHistory.pop()
-        del self.__jumpingPieceHistory.pop()
-        del self.__currentPlayerHistory.pop()
+        self.__boardHistory.pop()
+        self.__piecesHistory.pop()
+        self.__jumpingPieceHistory.pop()
+        self.__currentPlayerHistory.pop()
         self.__justUndoed = True
         
         self.__board = deepcopy(self.__boardHistory[-1])
@@ -156,7 +161,7 @@ class Game:
         y2 = y2 - 1
 
         currentPiece = self.__board[y1][x1] 
-        #print("currentpiece", currentPiece, currentPiece.moveVects)
+       
 
         if self.__jumpingPiece != None: # this is when player is in jumping spree loop
             if self.__jumpingPiece != currentPiece:
@@ -171,7 +176,8 @@ class Game:
                 raise GameError("2.Not possible")
         elif self.__jumpingPiece == None: # actual moving/jumping sequences - not in jumping spree
             if self.playerCanJump():
-                if self.isMove(currentPiece, x2, y2):
+               
+                if self.isWalk(currentPiece, x2, y2):
                     raise GameError("3.Jump is possible")
                 elif self.isJump(currentPiece, x2, y2):
                     self.jump(currentPiece, x2, y2)
@@ -180,8 +186,8 @@ class Game:
                 else:
                     raise GameError("4.Move not possible")
             else:
-                if self.isMove(currentPiece, x2, y2):
-                    self.move(currentPiece, x2, y2)
+                if self.isWalk(currentPiece, x2, y2):
+                    self.walk(currentPiece, x2, y2)
                     self.__jumpingPiece = None
                 else:
                     raise GameError("5.Move not possible")
@@ -190,7 +196,7 @@ class Game:
         if not self.__jumpingPiece: # it exists
             self.switchTurn()
 
-        if (y2 == 0 or y2 == 7) and self.__board[y2][x2].isStone:
+        if (y2 == 0 or y2 == self.boardLen-1) and self.__board[y2][x2].isStone:
             self.__board[y2][x2] = self.__board[y2][x2].getPromoted()
             if self.__jumpingPiece != None: # was on a jumping streak
                 self.__jumpingPiece = None # end the streak
@@ -218,13 +224,13 @@ class Game:
             return True
         return False
 
-    def isMove(self, currentPiece, x2, y2):
-        if [x2, y2] in self.getSqrsToMoveTo(currentPiece):
+    def isWalk(self, currentPiece, x2, y2):
+        if [x2, y2] in self.getSqrsToWalkTo(currentPiece):
             return True
         return False
 
 
-    def move(self, currentPiece, x2, y2):
+    def walk(self, currentPiece, x2, y2):
 
         ##############################################
         # CATEGORY A ALGORITHMS: LIST OPERATIONS
@@ -237,7 +243,7 @@ class Game:
 
     def jump(self, currentPiece, x2, y2):
         x1, y1 = currentPiece.x, currentPiece.y
-        self.move(currentPiece, x2, y2)
+        self.walk(currentPiece, x2, y2)
 
         ####################################################
         # CATEGORY C MODEL: SIMPLE MATHEMATICAL CALCULATIONS
@@ -269,34 +275,37 @@ class Game:
                     pass
                 self.__currentPlayer = self.__player1
         else:
+           
             if self.__currentPlayer == self.__player1:
                 self.__currentPlayer = self.__player2
             else:
                 self.__currentPlayer = self.__player1
+           
+         
 
     def getWinner(self):
-
         if self.__player1.numPieces == 0:
-            return self.__player1
+            return self.__player2.name
         elif self.__player2.numPieces == 0:
-            return self.__player2
+            return self.__player1.name
         return None
 
 
     ###########################################
     # CATEGORY B MODEL: MULTI-DIMENSIONAL ARRAY
     # returns a list of lists, which represent
-    # vectors of where the piece can next move
+    # vectors of where the piece can arrive 
+    # using the vectors
     # within the board but disregarding
     # surrounding pieces
     ###########################################
     def nextCoordsViaVectors(self, piece, vectors): #ensures coords are empty and in range
         coords = []
         for vect in vectors:
-            #print("vector", vect)
+        
             x2 = piece.x + vect[0]
             y2 = piece.y + vect[1]
-            #print(x2, y2)
+        
             if x2 in range(self.boardLen) and y2 in range(self.boardLen) and self.__board[y2][x2] == self.EMPTY:
                 coords.append([x2,y2])
         return coords
@@ -305,7 +314,8 @@ class Game:
     ###########################################
     # CATEGORY B MODEL: MULTI-DIMENSIONAL ARRAY
     # returns a list of lists, which represent
-    # vectors of where the piece can next move
+    # vectors of where the piece can arrive 
+    # using the vectors
     # within the board and regarding surrounding
     # pieces
     ###########################################
@@ -316,16 +326,20 @@ class Game:
             middlePiece = self.__board[int((coord[1]+piece.y)/2)][int((coord[0]+piece.x)/2)]
             if middlePiece != self.EMPTY and middlePiece.colour != self.__currentPlayer.colour:
                 coords.append(coord)
+
         return coords
 
-    def getSqrsToMoveTo(self, piece):
-        return self.nextCoordsViaVectors(piece, piece.moveVects)
+    def getSqrsToWalkTo(self, piece):
+        return self.nextCoordsViaVectors(piece, piece.walkVects)
 
     def __str__(self):
         result = "  " + " ".join(map(str, list(col for col in range(1, self.__boardLen+1))))
         for i, row in enumerate(self.__board):
             result += f"\n{i+1} " + " ".join(str(x) for x in row)
-        result += f"\n{self.__player1.name}({self.__player1.colour}): {self.__player1.numPieces} {self.__player2.name}({self.__player2.colour}): {self.__player2.numPieces}"
+
+        dirToWord = {1:"downwards",-1:"upwards"}
+
+        result += f"\n{self.__player1.name}({dirToWord[self.__player1.direction]}): {self.__player1.numPieces} {self.__player2.name}({dirToWord[self.__player2.direction]}): {self.__player2.numPieces}"
         result += f"\n{self.__currentPlayer.name}'s turn (enter coordinates for starting then ending square for moving piece in separate lines e.g. \nx1 y1 \nx2 y2"
         return result
    

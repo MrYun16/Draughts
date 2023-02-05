@@ -13,6 +13,7 @@ class Clock:
             self.__beingUsed = False # user has decided to turn on/off timers in settings
             self.__timeLeft = BooleanVar()
             self.__timeLeft.set(True)
+            self.__currentTimeInDemiSec = -1
         else:
             self.__currentTimeInDemiSec = startTime
             self.__clockDisplayString = clockDisplayString # clockDisplayString in StringVar()

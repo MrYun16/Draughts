@@ -5,7 +5,7 @@ class Piece:
         self.__colour = colour
         self.__direction = direction
         self.__isStone = None
-        self.__value = None
+        self._value = None
         self.__x = x
         self.__y = y
 
@@ -36,10 +36,10 @@ class Piece:
 
     @property
     def value(self):
-        return self.value
+        return self._value
 
     def setValue(self, v):
-        self.__value = v
+        self._value = v
 
     def changeIsStone(self, value):
         self.__isStone = value
@@ -63,25 +63,25 @@ class Stone(Piece):
         self.changeIsStone(True)
         if direction == 1: # down
             self.__jumpVects = [[-2, 2], [2, 2]]
-            self.__moveVects = [[-1, 1], [1, 1]]
+            self.__walkVects = [[-1, 1], [1, 1]]
         else: # up
             self.__jumpVects = [[2, -2], [-2, -2]]
-            self.__moveVects = [[1, -1], [-1, -1]]
-        self.setValue(1)
+            self.__walkVects = [[1, -1], [-1, -1]]
+        self.setValue(100)
     
     @property
     def jumpVects(self):
         return self.__jumpVects
 
     @property
-    def moveVects(self):
-        return self.__moveVects
+    def walkVects(self):
+        return self.__walkVects
 
     def changeJumpVects(self, new):
         self.__jumpVects = new
 
-    def changeMoveVects(self, new):
-        self.__moveVects = new
+    def changewalkVects(self, new):
+        self.__walkVects = new
 
 
     def getPromoted(self):
@@ -104,15 +104,15 @@ class King(Piece):
         return self.__jumpVects
 
     @property
-    def moveVects(self):
-        return self.__moveVects
+    def walkVects(self):
+        return self.__walkVects
         
     def __init__(self, colour, direction, x, y):
         super().__init__(colour, direction, x, y)
         self.changeIsStone(False)
         self.__jumpVects = [[-2, -2], [-2, 2], [2, -2], [2, 2]]
-        self.__moveVects = [[-1, -1], [-1, 1], [1, -1], [1, 1]]
-        self.setValue(3)
+        self.__walkVects = [[-1, -1], [-1, 1], [1, -1], [1, 1]]
+        self.setValue(400)
 
     def __repr__(self) -> str:
         if self.direction == 1:

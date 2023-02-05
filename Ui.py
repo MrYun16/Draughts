@@ -63,8 +63,9 @@ class Terminal:
                 except GameError as e:
                     print(e)
                 if self.__game.getWinner():
-                    print(f"winner is: {self.__game.getWinner}")
-                    print("game now finished")
+                    print(self.__game)
+                    print(f"winner is: {self.__game.getWinner()}")
+
                     break
                 
 
@@ -148,16 +149,16 @@ class Gui:
         Button(self.__loginWindow, text="Sign Up", command = self.__clickedSignUp).grid(row=4)
 
     def __clickedSignUp(self):
-        signUpWindow = Toplevel(self.__root)
-        self.__newUsername = Entry(signUpWindow, width=50)
+        self.__signUpWindow = Toplevel(self.__root)
+        self.__newUsername = Entry(self.__signUpWindow, width=50)
         self.__newUsername.grid(row=0, column=0)
-        Label(signUpWindow, text="New Username").grid(row=0, column=1)
-        self.__newPassword = Entry(signUpWindow, width=50)
+        Label(self.__signUpWindow, text="New Username").grid(row=0, column=1)
+        self.__newPassword = Entry(self.__signUpWindow, width=50)
         self.__newPassword.grid(row=1, column=0)
-        Label(signUpWindow, text="New Password").grid(row=1, column=1)
+        Label(self.__signUpWindow, text="New Password").grid(row=1, column=1)
         self.__signUpMsgText = StringVar()
-        Label(signUpWindow, textvariable=self.__signUpMsgText).grid(row=2)
-        Button(signUpWindow, text="Create", command = self.__handleAccountCreation).grid(row=3)
+        Label(self.__signUpWindow, textvariable=self.__signUpMsgText).grid(row=2)
+        Button(self.__signUpWindow, text="Create", command = self.__handleAccountCreation).grid(row=3)
 
     def __handleAccountCreation(self):
         newUsername = self.__newUsername.get()
@@ -169,6 +170,7 @@ class Gui:
             defaultPreferenceDict = {self.BOARDLEN:8, self.BOARDCOLOUR:"red", self.TIME:-1}
             try:
                 self.__dbInterface.createAccount(newUsername,newPassword,defaultPreferenceDict)
+                self.__signUpWindow.destroy()
                 self.__signUpMsgText.set("Account successfully created - can exit")
             except databaseError as e:
                 self.__signUpMsgText.set(e)
@@ -202,7 +204,7 @@ class Gui:
         AIwindow = Toplevel(self.__root)
         AIwindow.title("AI difficulty")
         boardLen = self.__overallPreference[self.BOARDLEN]
-        player1 = Player(self.__username, "white", 1, boardLen)
+        player1 = Player(self.__username, "black", 1, boardLen)
         lvlsFrame = Frame(AIwindow)
 
 
@@ -211,12 +213,12 @@ class Gui:
         # Created easy and hard AI objects for opponent (player 2)
         ##########################################################
         def clickedEasy():
-            player2=randomAI("EASY AI","black",-1,boardLen)
+            player2=randomAI("EASY AI","white",-1,boardLen)
             self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Easy", newOverallPreference)
             AIwindow.destroy()
 
         def clickedHard():
-            player2=hardAI("HARD AI","black",-1,boardLen)
+            player2=hardAI("HARD AI","white",-1,boardLen)
             self.__playWindow(player1, player2, Game(player1,player2,boardLen), "Hard", newOverallPreference)
             AIwindow.destroy()
 
@@ -240,8 +242,8 @@ class Gui:
         # CATEGORY B ALGORITHMS: GENERATION OF OBJECTS USING OOP
         # Created player 1 and player 2 classes to create game
         #######################################################
-        player1 = Player(self.__username, "white", 1, boardLen)
-        player2 = Player("Player2", "black", -1, boardLen)
+        player1 = Player(self.__username, "black", 1, boardLen)
+        player2 = Player("Player2", "white", -1, boardLen)
         game = Game(player1, player2, boardLen)
         clockDisplayString1 = StringVar()
         clockDisplayString2 = StringVar()
@@ -298,9 +300,8 @@ class Gui:
 
         def updatePreference(key, value):
             self.__overallPreference[key] = value
-            print("before", self.__dbInterface.getPlayerPreferenceDict())
             self.__dbInterface.updatePlayerPreferenceDict(self.__overallPreference)
-            print("after", self.__dbInterface.getPlayerPreferenceDict())
+           
 
         settingsWindow = Toplevel(self.__root)
         settingsWindow.geometry("400x400")
@@ -332,7 +333,7 @@ class Gui:
         for word, demi in timeInWordsToDemi.items():
             if demi == self.__overallPreference[self.TIME]:
                 timeInWords.set(word)
-                print("done")
+                
                 break
 
         timerMenu = OptionMenu(frame, timeInWords, "1min", "3mins", "5mins", "10mins", "30mins", "1hr", "1hr30mins", "none", command= lambda e: updatePreference(self.TIME, timeInWordsToDemi[timeInWords.get()]))
@@ -526,28 +527,39 @@ class Gui:
             self.__handleInput(x, y, preference)
 
     def __handleIfWinner(self, *args):
-        self.__winner = self.__game.getWinner()
-        if self.__winner: # winner by game rules
-            self.__msgText.set(f"winner is {self.__winner.name}")
-            self.__gameOnGoing = False
-            self.__player1.clock.stop()
-            self.__player2.clock.stop()
-        
-        try:
-            if self.__player1.clock.timeLeft.get() and not self.__player2.clock.timeLeft.get():
-                self.__msgText.set(f"winner is {self.__player1.name}")
-                self.__dbInterface.updateHumanStats(True)
+        if self.__gameOnGoing:
+            self.__winner = self.__game.getWinner()
+            if self.__winner: # winner by game rules
+                self.__msgText.set(f"winner is {self.__winner}")
                 self.__gameOnGoing = False
-            elif self.__player2.clock.timeLeft.get() and not self.__player1.clock.timeLeft.get():
-                self.__msgText.set(f"winner is {self.__player2.name}")
-                self.__dbInterface.updateHumanStats(False)
-                self.__gameOnGoing = False
-        except:
-            pass
+                if not self.__player2.isAI:
+                    self.__player1.clock.stop()
+                    self.__player2.clock.stop()
+
+                    if self.__winner == self.__player1.name:
+                        self.__dbInterface.updateHumanStats(True)
+                    else:
+                        self.__dbInterface.updateHumanStats(False)
+                else:
+                    if self.__winner == self.__player1.name:
+                        self.__dbInterface.updateAIstats(True)
+                    else:
+                        self.__dbInterface.updateAIstats(False)
+            
+            try: # checking if there's winner via timeout
+                if self.__player1.clock.timeLeft.get() and not self.__player2.clock.timeLeft.get():
+                    self.__msgText.set(f"winner is {self.__player1.name}")
+                    self.__dbInterface.updateHumanStats(True)
+                    self.__gameOnGoing = False
+                elif self.__player2.clock.timeLeft.get() and not self.__player1.clock.timeLeft.get():
+                    self.__msgText.set(f"winner is {self.__player2.name}")
+                    self.__dbInterface.updateHumanStats(False)
+                    self.__gameOnGoing = False
+            except:
+                pass
 
     def __handleInput(self, x, y, preference): # inputs 0 indexed
         if self.__gameOnGoing: #while game ongoing
-            print(self.__highlightedSqr)
             x += 1
             y += 1
             if self.__highlightedSqr == None: #hasn't picked first square
@@ -579,17 +591,20 @@ class Gui:
                     except GameError as e:
                         self.__msgText.set(e)
                         self.__unhighlight()
+            self.__handleIfWinner()
             self.__handleAI(preference)
             self.__handleIfWinner()
 
 
     def __handleAI(self, preference):
-        if self.__game.currentPlayer.isAI:
-            output = self.__game.currentPlayer.findMove(self.__game)
-            self.__game.play(output[0], output[1], output[2], output[3])
-            self.__updateBoard(preference)
-            if self.__game.currentPlayer.isAI: # AI in jumping spree
-                self.__handleAI(preference)
+        if self.__gameOnGoing:
+            if self.__game.currentPlayer.isAI:
+                output = self.__game.currentPlayer.findMove(self.__game)
+                self.__game.play(output[0], output[1], output[2], output[3])
+            
+                self.__updateBoard(preference)
+                if self.__game.currentPlayer.isAI: # AI in jumping spree
+                    self.__handleAI(preference)
      
 
     def __updateBoard(self, preference):

@@ -37,6 +37,9 @@ class Player:
     def changIsAI(self, new):
         self.__isAI = new
 
+    def amendTimeBeforeSaved(self, t):
+        self.__timeBeforeSaved = t
+
     @property
     def numPieces(self):
         return self.__numPieces
@@ -64,6 +67,7 @@ class Player:
     def colour(self):
         return self.__colour
 
+
     def amendNumPieces(self, n): #?
         self.__numPieces = n
 
@@ -79,11 +83,11 @@ class AI(Player):
             piece = game.jumpingPiece
             for toCoord in game.getSqrsToJumpTo(piece):
 
-        #############################################
+        #################################################################
         # CATEGORY A ALGORITHMS: LIST OPERATIONS
         # In the following three for loops, a list element is appended to 
         # possiblePlays
-        #############################################
+        #################################################################
                 possiblePlays.append([piece.x+1, piece.y+1, toCoord[0]+1, toCoord[1]+1])
 
         elif game.playerCanJump():
@@ -93,8 +97,8 @@ class AI(Player):
                         possiblePlays.append([piece.x+1, piece.y+1, toCoord[0]+1, toCoord[1]+1])
         else:
             for piece in ownPieces:
-                if len(game.getSqrsToMoveTo(piece)) > 0:
-                    for toCoord in game.getSqrsToMoveTo(piece):
+                if len(game.getSqrsToWalkTo(piece)) > 0:
+                    for toCoord in game.getSqrsToWalkTo(piece):
                         possiblePlays.append([piece.x+1, piece.y+1, toCoord[0]+1, toCoord[1]+1])
         return possiblePlays
 
@@ -142,12 +146,13 @@ class randomAI(AI):
 class hardAI(AI):
     PLAY = 1
     GAME = 0
+    EVALUATEDVALUE = 0
     def __init__(self, name, colour, direction, boardLen) -> None:
         super().__init__(name, colour, direction, boardLen)
 
     def findMove(self, game):
-        chosenPlay = self.__minimax(3, game, None, game.currentPlayer)[1]
-        print(chosenPlay)
+        chosenPlay = self.__minimax(3, game, None, game.currentPlayer)[self.PLAY]
+    
         return chosenPlay
 
     #######################################################################
@@ -156,22 +161,19 @@ class hardAI(AI):
     ######################################################################
     def __minimax(self, depth, game, prevPlay, maxingPlayer):
         if depth == 0:
-            return [self._evaluate(game, maxingPlayer),prevPlay]
-        nodesValues =  [[node[self.PLAY], self.__minimax(depth-1, node[self.GAME], prevPlay, maxingPlayer)] for node in self.__getNextNodes(game)] # node form = [correspondingGame, play], minimax returns 
-        #print(nodesValues)
-        
-        
-        #nodesValues.sort(key=lambda row: (row[1][0]))
-        
+            return [self._evaluate(game, maxingPlayer), prevPlay]
+        nodesValues =  [[self.__minimax(depth-1, node[self.GAME], node[self.PLAY], maxingPlayer),node[self.PLAY]] for node in self.__getNextNodes(game)] # minimax returns [evaluatedValue, playIntoThatGameState], node is [gameState, playIntoThatGameState]and nodesValues contains list of [minimax, node]
         nodesValues = self._sort(nodesValues)
-        a = [n[1][0] for n in nodesValues]
-        if sorted(a) != a:
-            print(False)
+        
         if maxingPlayer == game.currentPlayer: # maximising
-            return [nodesValues[-1][1], nodesValues[-1][0]]
+            return [nodesValues[-1][self.EVALUATEDVALUE], nodesValues[-1][self.PLAY]]
         else: # minimising
-            return [nodesValues[0][1], nodesValues[0][0]]
+            return [nodesValues[0][self.EVALUATEDVALUE], nodesValues[0][self.PLAY]]
 
+    ######################################
+    # CATEGORY A ALGORITHMS: MERGE SORT
+    # To sort nodeValues, I used mergesort
+    ######################################
     def _sort(self, nodesValues):
         if len(nodesValues) == 1:
             return nodesValues
@@ -179,10 +181,17 @@ class hardAI(AI):
         nV1, nV2 = self._sort(nV1), self._sort(nV2)
         ls = []
         while len(nV1) and len(nV2):
-            if nV1[0][1][0] < nV2[0][1][0]:
+            if nV1[0][1][self.EVALUATEDVALUE] < nV2[0][1][self.EVALUATEDVALUE]:
+                ls.append(nV1[0])
                 del nV1[0]
             else:
-                del nV1[0]
+                ls.append(nV2[0])
+                del nV2[0]
+
+        ########################################
+        # CATEGORY A ALGORITHMS: LIST OPERATIONS
+        # Here, used extend() list operation
+        ########################################
         ls.extend(nV1)
         ls.extend(nV2)
         return ls
@@ -193,7 +202,11 @@ class hardAI(AI):
         for play in possiblePlays:
             newGame = deepcopy(game)
             newGame.play(*play) # check this extraction works
+
+            ########################################
+            # CATEGORY A ALGORITHMS: LIST OPERATIONS
+            # Here, used append() list operation
+            ########################################
             nextNodes.append([newGame, play])
-        if len(nextNodes) == 0:
-            print("NODES IS 0")
+ 
         return nextNodes

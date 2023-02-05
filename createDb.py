@@ -28,7 +28,7 @@ cur.execute('''CREATE TABLE PlayerSavedGames (savedGameID text PRIMARY KEY, play
 #cur.execute("INSERT INTO PlayerInfo VALUES ('MrYun','123', 0, 0, 0, 0, 0, 0,0)")
 #cur.execute("ALTER TABLE PlayerSavedGames ADD username text")
 
-#cur.execute("DELETE FROM PlayerSavedGames WHERE username = 'MrYun'")
+cur.execute("UPDATE PlayerInfo SET AInumGames = 0, AIwins = 0, AIlosses = 0 WHERE username = 'yyun12'")
 
 con.commit()
 con.close()
